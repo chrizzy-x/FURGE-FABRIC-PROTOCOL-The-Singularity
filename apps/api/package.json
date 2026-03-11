@@ -1,0 +1,22 @@
+﻿{
+    "name":  "@furge/api",
+    "version":  "1.0.0",
+    "private":  true,
+    "type":  "module",
+    "scripts":  {
+                    "build":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
+                    "dev":  "node ../../node_modules/tsx/dist/cli.mjs watch src/server.ts",
+                    "lint":  "node ../../node_modules/eslint/bin/eslint.js src --ext .ts",
+                    "typecheck":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+                },
+    "dependencies":  {
+                         "@furge/bridges":  "workspace:*",
+                         "@furge/metaverse":  "workspace:*",
+                         "@furge/shared-types":  "workspace:*",
+                         "@furge/sdk":  "workspace:*",
+                         "@furge/dev-tools":  "workspace:*",
+                         "@furge/marketplace":  "workspace:*",
+                         "@fastify/cors":  "latest",
+                         "fastify":  "latest"
+                     }
+}

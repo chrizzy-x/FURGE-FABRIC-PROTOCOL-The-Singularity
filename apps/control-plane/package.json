@@ -1,0 +1,20 @@
+﻿{
+    "name":  "@furge/control-plane",
+    "version":  "1.0.0",
+    "private":  true,
+    "type":  "module",
+    "scripts":  {
+                    "build":  "node ../../node_modules/next/dist/bin/next build",
+                    "dev":  "node ../../node_modules/next/dist/bin/next dev --port 3200",
+                    "lint":  "node ../../node_modules/eslint/bin/eslint.js app --ext .ts,.tsx",
+                    "typecheck":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
+                },
+    "dependencies":  {
+                         "@furge/dev-tools":  "workspace:*",
+                         "react":  "latest",
+                         "react-dom":  "latest",
+                         "@furge/sdk":  "workspace:*",
+                         "@furge/shared-types":  "workspace:*",
+                         "next":  "latest"
+                     }
+}
