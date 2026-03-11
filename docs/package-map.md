@@ -1,15 +1,12 @@
 # Package Map
 
-| Package | Role |
+| Package | Responsibility |
 | --- | --- |
-| `@furge/shared-types` | Core domain types, schemas, DTOs, error shapes, and event contracts |
-| `@furge/protocol-core` | Proposal lifecycle, audit chain, identity registry, and event recording |
-| `@furge/consensus` | Reputation-weighted voting and confidence computation |
-| `@furge/chain-builder` | Chain configs, consensus rules, deployment flow, built-in chain registry |
-| `@furge/agent-node` | Agent runtime, deterministic model adapters, chain participation |
-| `@furge/sdk` | Client access, query orchestration, cost estimation |
-| `@furge/bridges` | Bridge certification, sync-in, sync-out, validation, recovery |
-| `@furge/tokenomics` | `$FURGE`, chain-native tokens, fees, journals, settlement |
-| `@furge/marketplace` | Skill certification, listings, transfers, rentals, licensing, bundles |
-| `@furge/metaverse` | Character profiles, presence, takeover modes, event history |
-| `@furge/dev-tools` | Local network, explorer helpers, seeded fixtures, demo composition |
+| `@ffp/shared-types` | Core protocol contracts, schemas, and shared utility types |
+| `@ffp/protocol-core` | Agent identity, immutable chains, proposal lifecycle, reputation events, and chain verification |
+| `@ffp/consensus` | Reputation-weighted BFT consensus and timeout handling |
+| `@ffp/agent-node` | Protocol node runtime, signing, validation, and peer participation |
+| `@ffp/bridges` | Bridge adapter contracts, registry, and audited bridge event flow |
+| `@ffp/sdk` | Infrastructure-facing client surface for nodes and API consumers |
+| `@ffp/dev-tools` | Local 5-node reference network, CLI bootstrap, smoke helpers, and benchmarks |
+| `@ffp/tokenomics` | Layer 0 `$FURGE` coordination fee journals only |

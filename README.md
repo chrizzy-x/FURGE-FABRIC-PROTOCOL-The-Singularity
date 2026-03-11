@@ -1,49 +1,56 @@
 # FURGE FABRIC PROTOCOL; The Singularity
 
-Furge is a Windows-friendly TypeScript monorepo that turns the source whitepaper, executive summary, developer guide, economic model, use cases, and roadmap into a runnable first-pass intelligence coordination platform. The repository includes a Fastify API, Next.js control surfaces, a deterministic five-node libp2p reference network, built-in domain chains, a typed SDK, bridge framework, marketplace, token accounting, metaverse session control, and seed-driven demo applications.
+FURGE FABRIC PROTOCOL, or FFP, is Layer 0 coordination infrastructure for AI agents. This repository does not build domain chains, applications, metaverse experiences, marketplaces, or end-user interfaces. It builds the foundation those systems would run on: cryptographic agent identity, reputation-weighted Byzantine fault tolerant consensus, immutable hash-linked decision chains, peer-to-peer networking, and bridge specifications for external integrations.
 
-## Source-Derived Scope
+The source of truth for this repository is the updated document set under `FFP docs/`:
 
-The current implementation is anchored to the local source documents in this repository:
+- `FFP docs/01-Executive-Summary.docx`
+- `FFP docs/02-Technical-Specification.docx`
+- `FFP docs/03-Real-World-Use-Cases.docx`
+- `FFP docs/04-Economic-Model-Tokenomics.docx`
 
-- `00-FURGE-FABRIC-PROTOCOL-The-Singularity-COVER.docx`
-- `01-Executive-Summary.docx`
-- `02-Technical-Whitepaper.docx`
-- `03-Developer-Documentation.docx`
-- `04-Economic-Model.docx`
-- `05-Use-Cases-Applications.docx`
-- `06-Roadmap-Implementation-Plan.docx`
+## What This Repo Contains
 
-Tracked documentation that maps implementation choices back to those documents lives under `docs/`.
+- Layer 0 protocol packages in TypeScript
+- A Fastify API for infrastructure-facing protocol operations
+- Local node and network tooling for deterministic 5-node protocol validation
+- Tests for identity, consensus, immutable chains, networking, bridges, and protocol fee events
+- Documentation that explains the Layer 0 boundary clearly
 
-## Workspace Layout
+## What This Repo Does Not Contain
 
-- `apps/api`: Fastify service exposing protocol, explorer, bridge, marketplace, token, and metaverse routes
-- `apps/control-plane`: operational dashboard for deployment status, balances, reputation, bridge runs, and session control
-- `apps/explorer`: audit timelines, voting traces, bridge execution, marketplace activity, and metaverse history
-- `apps/docs`: architecture, setup, testing, demo, package map, requirements matrix, and assumptions register
-- `apps/*-demo`: deterministic domain workflows for medical, finance, research, legal, education, and metaverse chains
-- `packages/*`: shared protocol packages and stable public APIs
+- No Layer 1 domain chains such as Health Chain or Finance Chain
+- No Layer 2 applications or user interfaces
+- No metaverse product code
+- No skill marketplace implementation
+- No medical, legal, financial, or educational business logic
 
-## Local Development
+## Protocol Scope
 
-The repository is designed for Node.js 24 and `corepack`-managed `pnpm`. Because this workspace path contains a semicolon, all scripts invoke tool entrypoints directly instead of relying on `node_modules/.bin` being injected into `PATH`.
+FFP is responsible for six core areas:
 
-1. `set COREPACK_HOME=%CD%\\.corepack`
-2. `corepack prepare pnpm@latest --activate`
-3. `corepack pnpm install`
-4. Copy `.env.example` into app-local `.env.local` files when you want to run the web surfaces against the Fastify API
-5. Use `corepack pnpm infra:up` when Docker Desktop is available
-6. Use `corepack pnpm db:generate` and `corepack pnpm db:seed` to prepare seeded state
+1. Agent identity through self-generated cryptographic keypairs and signed messages
+2. Reputation-weighted Byzantine fault tolerant consensus with a 2/3 threshold
+3. Immutable hash-linked blocks that record proposals, votes, and finalized outcomes
+4. Reputation tracking based on alignment with consensus outcomes
+5. Peer-to-peer discovery and messaging for autonomous agent coordination
+6. Bridge contracts and audited integration events for external systems
 
-## Verification
+## Development
 
-Primary verification commands:
+The repo keeps the existing Windows-friendly TypeScript toolchain:
 
-- `corepack pnpm lint`
-- `corepack pnpm typecheck`
-- `corepack pnpm test`
-- `corepack pnpm build`
-- `corepack pnpm smoke`
+- Node.js 24
+- `corepack` managed `pnpm`
+- Turborepo
+- TypeScript 5
+- Fastify
+- libp2p
+- Prisma and Redis kept as stack components for protocol infrastructure work
+- Vitest for automated coverage
 
-See `docs/testing-guide.md` and `docs/demo-guide.md` for subsystem-specific coverage and the end-to-end proof flow.
+Because the workspace path contains a semicolon, commands should call tool entrypoints explicitly where needed.
+
+## Current Direction
+
+The repository previously contained a broader checkpoint that mixed Layer 0 protocol work with Layer 1 and Layer 2 concepts. That checkpoint is being corrected through follow-up commits. The active direction from this point forward is Layer 0 only.

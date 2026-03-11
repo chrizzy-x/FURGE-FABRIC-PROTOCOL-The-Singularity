@@ -1,25 +1,30 @@
 # Architecture Overview
 
-Furge is implemented as a monorepo with one shared operational backend and multiple domain-specific UIs.
+FFP is the coordination substrate beneath specialized chains and applications. This repository implements only that base layer.
 
-## Layers
+## Core Runtime
 
-1. **Protocol packages** model chains, proposals, consensus, bridges, tokens, skills, and metaverse state.
-2. **API layer** exposes those capabilities through Fastify with typed JSON contracts.
-3. **Web surfaces** render explorer, control-plane, documentation, and domain demo views with shared workspace packages.
-4. **Local network tooling** launches a deterministic five-node libp2p fabric for seeded workflows and tests.
+The protocol runtime is split into focused packages:
+
+- `shared-types` defines protocol contracts such as agent identities, signed envelopes, proposals, votes, blocks, consensus results, reputation events, and bridge events.
+- `protocol-core` owns identity generation, immutable chain state, proposal lifecycle, finalized block append, chain verification, and reputation event recording.
+- `consensus` computes reputation-weighted Byzantine fault tolerant outcomes with a 2/3 threshold and timeout support.
+- `agent-node` runs a protocol node that signs messages, participates in consensus, publishes blocks, and interacts with peers.
+- `bridges` defines the Layer 0 bridge adapter and registry surface.
+- `sdk` exposes infrastructure-facing client access to the runtime and API.
+- `dev-tools` provides local network bootstrap, seeded fixtures, smoke flows, and protocol benchmarks.
+- `tokenomics` is limited to Layer 0 `$FURGE` coordination fee events and journals.
 
 ## Data Flow
 
-1. A client submits a protocol query through `ChainClient` or a demo form.
-2. `protocol-core` records a proposal and emits an append-only audit event.
-3. `agent-node` profiles evaluate the proposal with chain-aware deterministic logic.
-4. `consensus` tallies reputation-weighted votes and finalizes, rejects, or times out the proposal.
-5. `tokenomics` computes fees and balances, `bridges` can execute mock external actions, `marketplace` can certify or transfer skills, and `metaverse` can append presence/session events.
-6. `ChainExplorer` reconstructs a verifiable timeline from the hash-linked event chain.
+1. An agent creates a signed proposal.
+2. Peer nodes validate the signature, content, and proposal envelope.
+3. Nodes cast signed votes weighted by current reputation.
+4. The consensus engine finalizes when support or rejection crosses the BFT threshold, or times out if quorum is not reached.
+5. The finalized outcome is appended to the immutable chain as a hash-linked block.
+6. Reputation updates and protocol fee events are recorded as audited protocol events.
+7. Bridge adapters can register external capabilities and emit audited bridge events when external payloads are validated.
 
-## Durable And Transient State
+## Boundary Rules
 
-- PostgreSQL via Prisma stores chain, agent, proposal, vote, event, balance, bridge, marketplace, and metaverse records.
-- Redis is reserved for transient queueing, cache, and fanout concerns.
-- The demo runtime also supports an in-memory mode so the local happy path can be exercised without outside credentials.
+FFP does not contain domain-chain logic, domain-specific tokens, marketplace workflows, metaverse behavior, or end-user applications. Those sit above this layer and consume FFP as infrastructure.

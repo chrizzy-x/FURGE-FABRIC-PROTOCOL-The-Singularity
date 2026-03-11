@@ -1,16 +1,15 @@
 # Testing Guide
 
-## Automated Coverage
+## Required Coverage
 
-- Consensus weighting and confidence
-- Proposal immutability
-- Chain deployment
-- Cross-chain orchestration
-- Bridge validation and recovery
-- Token fee estimation and settlement
-- Skill certification and transactions
-- Explorer audit timelines
-- Metaverse control handoff
+- Agent identity generation, export, signing, and verification
+- Consensus threshold behavior below, at, and above the 2/3 weighted boundary
+- Reputation gains and losses after finalized outcomes
+- Immutable block append, hash verification, and tamper detection
+- Bridge registration and external payload validation hooks
+- Local 5-node network bootstrap and peer discovery
+- Proposal to vote to finalized block integration flow
+- API routes over the protocol runtime
 
 ## Commands
 
@@ -18,8 +17,3 @@
 - `corepack pnpm typecheck`
 - `corepack pnpm test`
 - `corepack pnpm build`
-- `corepack pnpm smoke`
-
-## Notes
-
-The repository avoids reliance on live AI providers and external SaaS systems. End-to-end flows use deterministic agents and deterministic mock bridges so tests remain stable.

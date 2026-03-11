@@ -18,3 +18,5 @@ tmp/
 .env.local
 .env.*.local
 !.env.example
+FFP docs/BUILD-PROMPT-FOR-CODEX.md
+FFP docs/CODEX-UPDATE-SCOPE-CLARIFICATION.md

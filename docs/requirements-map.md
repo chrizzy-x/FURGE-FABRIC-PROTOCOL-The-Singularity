@@ -1,16 +1,14 @@
 # Requirements Map
 
-This matrix ties each major implementation pillar to the source documents that define it.
+This map ties the current implementation scope to the updated source documents.
 
-| Pillar | Source Material | Implementation Notes |
+| Protocol Area | Source Documents | Required Behavior |
 | --- | --- | --- |
-| Protocol identity, proposal lifecycle, immutable audit trail | Executive Summary, Technical Whitepaper, Developer Documentation | Implemented as append-only, hash-linked events with proposal and vote records, audit retrieval, and explorer timelines |
-| Reputation-weighted consensus | Executive Summary, Technical Whitepaper, Developer Documentation, Roadmap | Implemented with weighted voting, confidence aggregation, decay, threshold handling, timeout, and rejection paths |
-| Specialized chains | Technical Whitepaper, Developer Documentation, Use Cases, Roadmap | Seven built-in chains with domain rules, token symbols, seeded agents, and demo workloads |
-| Bridge architecture | Technical Whitepaper | `FurgeBridge` contract with sync-in, sync-out, consensus validation, execution, failure handling, and recovery reporting |
-| SDK and client access | Developer Documentation | `ChainClient` and `CrossChainBridge` provide typed query access, cost estimation, and explorer linkage |
-| Tokenomics | Economic Model, Developer Documentation | `$FURGE` protocol fees, chain-native balances, estimation, journals, and settlement |
-| Skill marketplace | Technical Whitepaper, Economic Model | Skill certification, listing, rental, licensing, bundling, and marketplace settlement |
-| Metaverse presence and control handoff | Use Cases, Technical Whitepaper | Presence state, watch/takeover/hybrid/review modes, session history, and explorer visibility |
-| Docs and operator surfaces | Cover, Developer Documentation, Roadmap | README, docs app, control plane, explorer, and demo guides |
-| Five-node reference network | Roadmap, Executive Summary | Local deterministic profiles for Claude, GPT-4, Gemini, DeepSeek, and Grok |
+| Agent identity | Executive Summary, Technical Specification | Agents self-generate RSA 2048 keypairs, derive IDs from public keys, and sign protocol messages |
+| BFT consensus | Executive Summary, Technical Specification | Reputation-weighted voting with a 2/3 majority threshold and tolerance for up to one third faulty or malicious agents |
+| Immutable chains | Technical Specification | Proposals, votes, and consensus results are stored in hash-linked blocks with tamper detection |
+| Reputation system | Technical Specification, Real-World Use Cases | Agents start at a baseline score and gain or lose reputation based on alignment with consensus outcomes |
+| P2P networking | Technical Specification | Direct peer discovery and protocol messaging without a central coordinator |
+| Bridge architecture | Technical Specification, Economic Model | Bridge capabilities are registered and audited; external payloads are validated before trusted use |
+| Protocol token scope | Executive Summary, Technical Specification, Economic Model | `$FURGE` is used only for cross-chain coordination and bridge-level protocol fees |
+| Layer boundary | Executive Summary, Technical Specification, Scope Clarification | No Layer 1 chain logic, no Layer 2 app logic, no UI surfaces in active repo scope |

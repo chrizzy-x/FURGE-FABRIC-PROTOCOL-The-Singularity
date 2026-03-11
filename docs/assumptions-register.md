@@ -1,10 +1,9 @@
 # Assumptions Register
 
-| Area | Assumption | Rationale |
+| Area | Assumption | Why |
 | --- | --- | --- |
-| Education token symbol | `$LEARN` | The source docs specify Education Chain but not a token symbol |
-| Metaverse token symbol | `$META` | The source docs specify Metaverse Chain but not a token symbol |
-| Test chain token symbol | `$TEST` | Needed for deterministic local smoke and fee flows |
-| Skill certification routing | Domain chains certify skills instead of a separate Engineering Chain | The whitepaper gives Engineering Chain as an example, but the required built-in chain list does not include it |
-| Local provider strategy | Deterministic adapters represent Claude, GPT-4, Gemini, DeepSeek, and Grok profiles | The roadmap calls for a five-node reference network without requiring outside credentials |
-| Durable state fallback | In-memory runtime remains available when PostgreSQL or Redis are unavailable locally | Keeps the local happy path usable while durable adapters still exist in the monorepo |
+| Scope precedence | The four `.docx` files in `FFP docs/` override the earlier broad checkpoint | The user explicitly re-scoped the repo to Layer 0 only |
+| Markdown control files | `BUILD-PROMPT-FOR-CODEX.md` and `CODEX-UPDATE-SCOPE-CLARIFICATION.md` guide scope interpretation but remain untracked | The user explicitly asked that prompt and update files stay out of Git |
+| API surface | A Fastify API is allowed because it is an infrastructure-facing protocol interface, not a user product UI | This preserves the locked stack while respecting Layer 0 boundaries |
+| Token scope | Only `$FURGE` protocol fee events remain in active repo scope | Chain-native token economics belong to Layer 1 |
+| Persistence | In-memory protocol state is the default local happy path, with Prisma and Redis retained as stack components for infrastructure evolution | This keeps the repo runnable locally while staying inside the current Layer 0 scope |
