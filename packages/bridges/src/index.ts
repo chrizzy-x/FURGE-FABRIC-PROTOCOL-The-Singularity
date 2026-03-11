@@ -1,103 +1,188 @@
-import { makeId, nowIso, type BridgeActionRequest, type BridgeRun, type ConsensusResult } from "@furge/shared-types";
+import {
+  BridgeAdapterManifestSchema,
+  BridgeExecutionReportSchema,
+  BridgeRequestSchema,
+  BridgeValidationSchema,
+  type BridgeAdapterManifest,
+  type BridgeExecutionReport,
+  type BridgeRecovery,
+  type BridgeRequest,
+  type BridgeValidation,
+  type ConsensusResult,
+  makeDeterministicId,
+  nowIso
+} from "@ffp/shared-types";
 
-export type BridgeRecovery = {
-  status: "queued" | "replayed" | "manual-review";
-  notes: string;
-};
-
-export abstract class FurgeBridge {
-  constructor(
-    public readonly chainId: string,
-    public readonly serviceId: string,
-    public readonly bridgeVersion: string
-  ) {}
-
-  abstract syncFromService(): Promise<Record<string, unknown>>;
-  abstract syncToService(action: Record<string, unknown>): Promise<Record<string, unknown>>;
-  abstract validateExternal(data: Record<string, unknown>): Promise<ConsensusResult>;
-  abstract executeWithConsensus(action: Record<string, unknown>, consensus: ConsensusResult): Promise<Record<string, unknown>>;
-  abstract handleFailure(error: Error): Promise<BridgeRecovery>;
+export interface BridgeAdapter {
+  readonly manifest: BridgeAdapterManifest;
+  validateExternal(request: BridgeRequest): BridgeValidation;
+  syncFromService(request: BridgeRequest): Promise<Record<string, unknown>>;
+  syncToService(request: BridgeRequest): Promise<Record<string, unknown>>;
+  handleFailure(error: unknown, request: BridgeRequest): BridgeRecovery;
 }
 
-export class MockServiceBridge extends FurgeBridge {
-  private readonly runs: BridgeRun[] = [];
+export class BridgeRegistry {
+  private readonly adapters = new Map<string, BridgeAdapter>();
+  private readonly reports: BridgeExecutionReport[] = [];
 
-  override async syncFromService(): Promise<Record<string, unknown>> {
-    return { source: this.serviceId, syncedAt: nowIso(), status: "ok" };
+  register(adapter: BridgeAdapter): void {
+    const manifest = BridgeAdapterManifestSchema.parse(adapter.manifest);
+    this.adapters.set(manifest.adapterId, adapter);
   }
 
-  override async syncToService(action: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return { serviceId: this.serviceId, action, status: "accepted", executedAt: nowIso() };
+  listAdapters(): BridgeAdapterManifest[] {
+    return Array.from(this.adapters.values()).map((adapter) => adapter.manifest);
   }
 
-  override async validateExternal(data: Record<string, unknown>): Promise<ConsensusResult> {
-    return {
-      proposalId: String(data.proposalId ?? "bridge-validation"),
-      chain: this.chainId as ConsensusResult["chain"],
-      status: "accepted",
-      confidence: 0.88,
-      supportWeight: 420,
-      rejectWeight: 40,
-      totalWeight: 460,
-      reachedAt: nowIso(),
-      rationale: `External payload for ${this.serviceId} passed deterministic bridge validation.`,
-      supportingAgents: ["claude-medical-lead", "gpt4-medical-auditor"],
-      rejectingAgents: []
-    };
+  listReports(): BridgeExecutionReport[] {
+    return [...this.reports];
   }
 
-  override async executeWithConsensus(action: Record<string, unknown>, consensus: ConsensusResult): Promise<Record<string, unknown>> {
-    if (consensus.status !== "accepted") {
-      throw new Error(`Bridge action for ${this.serviceId} cannot execute without accepted consensus.`);
+  getAdapter(adapterId: string): BridgeAdapter {
+    const adapter = this.adapters.get(adapterId);
+    if (!adapter) {
+      throw new Error(`Unknown bridge adapter ${adapterId}`);
     }
-    return this.syncToService(action);
+    return adapter;
   }
 
-  override async handleFailure(error: Error): Promise<BridgeRecovery> {
-    return {
-      status: "manual-review",
-      notes: `Bridge failure captured for ${this.serviceId}: ${error.message}`
-    };
-  }
+  async executeWithConsensus(request: BridgeRequest, consensus: ConsensusResult): Promise<BridgeExecutionReport> {
+    const parsedRequest = BridgeRequestSchema.parse(request);
+    const adapter = this.getAdapter(parsedRequest.adapterId);
+    const validation = BridgeValidationSchema.parse(adapter.validateExternal(parsedRequest));
 
-  async run(request: BridgeActionRequest, consensus: ConsensusResult): Promise<BridgeRun> {
-    try {
-      const response = await this.executeWithConsensus(request.payload, consensus);
-      const run: BridgeRun = {
-        id: makeId("bridge", `${request.proposalId}:${this.serviceId}:${this.runs.length}`),
-        chain: request.chain,
-        serviceId: this.serviceId,
-        direction: request.direction,
-        proposalId: request.proposalId,
-        status: "executed",
-        request: request.payload,
-        response,
-        recovery: null,
-        createdAt: nowIso()
-      };
-      this.runs.push(run);
-      return run;
-    } catch (error) {
-      const failure = error instanceof Error ? error : new Error(String(error));
-      const recovery = await this.handleFailure(failure);
-      const run: BridgeRun = {
-        id: makeId("bridge", `${request.proposalId}:${this.serviceId}:${this.runs.length}`),
-        chain: request.chain,
-        serviceId: this.serviceId,
-        direction: request.direction,
-        proposalId: request.proposalId,
+    if (consensus.status !== "accepted") {
+      const report = BridgeExecutionReportSchema.parse({
+        runId: makeDeterministicId("bridge", `${parsedRequest.requestId}:blocked`),
+        adapterId: parsedRequest.adapterId,
+        requestId: parsedRequest.requestId,
         status: "failed",
-        request: request.payload,
+        validation,
+        response: {},
+        recovery: {
+          attempted: false,
+          summary: "Consensus did not accept the bridge request.",
+          payload: {}
+        },
+        createdAt: nowIso(),
+        consensusStatus: consensus.status
+      });
+      this.reports.push(report);
+      return report;
+    }
+
+    if (!validation.valid) {
+      const report = BridgeExecutionReportSchema.parse({
+        runId: makeDeterministicId("bridge", `${parsedRequest.requestId}:invalid`),
+        adapterId: parsedRequest.adapterId,
+        requestId: parsedRequest.requestId,
+        status: "failed",
+        validation,
+        response: {},
+        recovery: {
+          attempted: false,
+          summary: "Bridge payload failed adapter validation.",
+          payload: { reasons: validation.reasons }
+        },
+        createdAt: nowIso(),
+        consensusStatus: consensus.status
+      });
+      this.reports.push(report);
+      return report;
+    }
+
+    try {
+      const response = adapter.manifest.direction === "ingress"
+        ? await adapter.syncFromService(parsedRequest)
+        : await adapter.syncToService(parsedRequest);
+      const report = BridgeExecutionReportSchema.parse({
+        runId: makeDeterministicId("bridge", `${parsedRequest.requestId}:executed`),
+        adapterId: parsedRequest.adapterId,
+        requestId: parsedRequest.requestId,
+        status: "executed",
+        validation,
+        response,
+        createdAt: nowIso(),
+        consensusStatus: consensus.status
+      });
+      this.reports.push(report);
+      return report;
+    } catch (error) {
+      const recovery = adapter.handleFailure(error, parsedRequest);
+      const report = BridgeExecutionReportSchema.parse({
+        runId: makeDeterministicId("bridge", `${parsedRequest.requestId}:recovered`),
+        adapterId: parsedRequest.adapterId,
+        requestId: parsedRequest.requestId,
+        status: recovery.attempted ? "recovered" : "failed",
+        validation,
         response: {},
         recovery,
-        createdAt: nowIso()
-      };
-      this.runs.push(run);
-      return run;
+        createdAt: nowIso(),
+        consensusStatus: consensus.status
+      });
+      this.reports.push(report);
+      return report;
     }
   }
 
-  getRuns(): BridgeRun[] {
-    return [...this.runs];
+  importReport(report: BridgeExecutionReport): void {
+    this.reports.push(BridgeExecutionReportSchema.parse(report));
+  }
+}
+
+export class LoopbackBridgeAdapter implements BridgeAdapter {
+  readonly manifest: BridgeAdapterManifest = {
+    adapterId: "loopback-mailbox",
+    version: "1.0.0",
+    direction: "bidirectional",
+    supportedOperations: ["sync-inbox", "send-message"],
+    description: "Deterministic bridge that normalizes mailbox-style payloads for local consensus tests."
+  };
+
+  validateExternal(request: BridgeRequest): BridgeValidation {
+    const subject = request.payload.subject;
+    const address = request.payload.address;
+    const valid = typeof subject === "string" && subject.length >= 3 && typeof address === "string" && address.includes("@");
+    return {
+      valid,
+      reasons: valid ? [] : ["Payload must include a subject and RFC-like address."],
+      normalizedPayload: valid
+        ? {
+            address: String(address).toLowerCase(),
+            subject: subject,
+            body: String(request.payload.body ?? "")
+          }
+        : undefined
+    };
+  }
+
+  async syncFromService(request: BridgeRequest): Promise<Record<string, unknown>> {
+    return {
+      source: "loopback",
+      operation: request.operation,
+      mailbox: request.payload.address,
+      accepted: true,
+      normalizedAt: nowIso()
+    };
+  }
+
+  async syncToService(request: BridgeRequest): Promise<Record<string, unknown>> {
+    return {
+      destination: "loopback",
+      operation: request.operation,
+      delivered: true,
+      envelopeDigest: makeDeterministicId("mail", request.payload)
+    };
+  }
+
+  handleFailure(error: unknown, request: BridgeRequest): BridgeRecovery {
+    return {
+      attempted: true,
+      summary: error instanceof Error ? error.message : "Bridge execution failed and was converted into a deterministic recovery report.",
+      payload: {
+        adapterId: request.adapterId,
+        requestId: request.requestId
+      }
+    };
   }
 }

@@ -1,35 +1,29 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "allowJs": false,
     "strict": true,
-    "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "noEmitOnError": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "preserve",
+    "skipLibCheck": true,
+    "composite": true,
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@furge/shared-types": ["packages/shared-types/src/index.ts"],
-      "@furge/protocol-core": ["packages/protocol-core/src/index.ts"],
-      "@furge/consensus": ["packages/consensus/src/index.ts"],
-      "@furge/chain-builder": ["packages/chain-builder/src/index.ts"],
-      "@furge/agent-node": ["packages/agent-node/src/index.ts"],
-      "@furge/sdk": ["packages/sdk/src/index.ts"],
-      "@furge/bridges": ["packages/bridges/src/index.ts"],
-      "@furge/tokenomics": ["packages/tokenomics/src/index.ts"],
-      "@furge/marketplace": ["packages/marketplace/src/index.ts"],
-      "@furge/metaverse": ["packages/metaverse/src/index.ts"],
-      "@furge/dev-tools": ["packages/dev-tools/src/index.ts"]
+      "@ffp/shared-types": ["packages/shared-types/src/index.ts"],
+      "@ffp/protocol-core": ["packages/protocol-core/src/index.ts"],
+      "@ffp/consensus": ["packages/consensus/src/index.ts"],
+      "@ffp/bridges": ["packages/bridges/src/index.ts"],
+      "@ffp/tokenomics": ["packages/tokenomics/src/index.ts"],
+      "@ffp/agent-node": ["packages/agent-node/src/index.ts"],
+      "@ffp/sdk": ["packages/sdk/src/index.ts"],
+      "@ffp/dev-tools": ["packages/dev-tools/src/index.ts"]
     }
-  },
-  "exclude": ["node_modules", "dist", ".next", ".turbo"]
+  }
 }

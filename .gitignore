@@ -1,22 +1,15 @@
-.corepack/
-.next/
-.planning/
-.turbo/
-.vercel/
-coverage/
-dist/
 node_modules/
-playwright-report/
-test-results/
-tmp/
-*.log
-*.plan
-*.plan.md
-*.prompt
-*.prompt.md
+dist/
+coverage/
+.turbo/
+.corepack/
 .env
 .env.local
-.env.*.local
-!.env.example
+*.tsbuildinfo
+packages/protocol-core/generated/
+.planning/
+*.plan.md
+prompt*.md
+codex*.md
 FFP docs/BUILD-PROMPT-FOR-CODEX.md
 FFP docs/CODEX-UPDATE-SCOPE-CLARIFICATION.md

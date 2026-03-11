@@ -1,59 +1,55 @@
-﻿{
-    "name":  "furge-fabric-protocol-the-singularity",
-    "version":  "1.0.0",
-    "private":  true,
-    "type":  "module",
-    "packageManager":  "pnpm@10.32.1",
-    "engines":  {
-                    "node":  "\u003e=24.0.0"
-                },
-    "scripts":  {
-                    "build":  "node ./node_modules/turbo/bin/turbo run build",
-                    "dev":  "node ./node_modules/turbo/bin/turbo run dev --parallel",
-                    "lint":  "node ./node_modules/turbo/bin/turbo run lint",
-                    "typecheck":  "node ./node_modules/turbo/bin/turbo run typecheck",
-                    "test":  "node ./node_modules/turbo/bin/turbo run test",
-                    "smoke":  "node ./node_modules/@playwright/test/cli.js test",
-                    "db:generate":  "node ./node_modules/prisma/build/index.js generate --schema packages/protocol-core/prisma/schema.prisma",
-                    "db:migrate":  "node ./node_modules/prisma/build/index.js migrate dev --schema packages/protocol-core/prisma/schema.prisma",
-                    "db:seed":  "node ./scripts/seed.mjs",
-                    "infra:up":  "docker compose up -d postgres redis",
-                    "infra:down":  "docker compose down",
-                    "verify":  "node ./node_modules/turbo/bin/turbo run lint typecheck test build"
-                },
-    "devDependencies":  {
-                            "@eslint/js":  "latest",
-                            "@fastify/cors":  "latest",
-                            "@playwright/test":  "latest",
-                            "@types/node":  "latest",
-                            "@types/react":  "latest",
-                            "@types/react-dom":  "latest",
-                            "@vitest/coverage-v8":  "latest",
-                            "eslint":  "latest",
-                            "eslint-config-next":  "latest",
-                            "fastify":  "latest",
-                            "next":  "latest",
-                            "prisma":  "latest",
-                            "react":  "latest",
-                            "react-dom":  "latest",
-                            "tsx":  "latest",
-                            "turbo":  "latest",
-                            "typescript":  "latest",
-                            "typescript-eslint":  "latest",
-                            "vitest":  "latest",
-                            "zod":  "latest"
-                        },
-    "dependencies":  {
-                         "@chainsafe/libp2p-gossipsub":  "latest",
-                         "@chainsafe/libp2p-noise":  "latest",
-                         "@chainsafe/libp2p-yamux":  "latest",
-                         "@libp2p/tcp":  "latest",
-                         "@libp2p/websockets":  "latest",
-                         "@prisma/adapter-pg":  "latest",
-                         "@prisma/client":  "latest",
-                         "libp2p":  "latest",
-                         "pg":  "latest",
-                         "redis":  "latest",
-                         "@libp2p/identify":  "latest"
-                     }
+{
+  "name": "furge-fabric-protocol-the-singularity",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "corepack pnpm -r --filter @ffp/* --if-present run build",
+    "dev": "corepack pnpm -r --parallel --filter @ffp/* --if-present run dev",
+    "lint": "corepack pnpm -r --filter @ffp/* --if-present run lint",
+    "typecheck": "corepack pnpm -r --filter @ffp/* --if-present run typecheck",
+    "test": "corepack pnpm -r --filter @ffp/* --if-present run test",
+    "verify": "corepack pnpm run lint && corepack pnpm run typecheck && corepack pnpm run test && corepack pnpm run build && corepack pnpm run smoke",
+    "db:generate": "node ./node_modules/prisma/build/index.js generate --schema packages/protocol-core/prisma/schema.prisma",
+    "db:format": "node ./node_modules/prisma/build/index.js format --schema packages/protocol-core/prisma/schema.prisma",
+    "infra:up": "docker compose up -d postgres redis",
+    "infra:down": "docker compose down",
+    "api:dev": "corepack pnpm --filter @ffp/api run dev",
+    "network:bootstrap": "node ./node_modules/tsx/dist/cli.mjs scripts/bootstrap-network.ts",
+    "smoke": "node ./node_modules/tsx/dist/cli.mjs scripts/smoke-network.ts",
+    "bench": "node ./node_modules/tsx/dist/cli.mjs scripts/benchmark-consensus.ts",
+    "turbo:build": "node ./node_modules/turbo/bin/turbo run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@fastify/cors": "latest",
+    "@types/node": "latest",
+    "@vitest/coverage-v8": "latest",
+    "eslint": "latest",
+    "fastify": "latest",
+    "prisma": "latest",
+    "tsx": "latest",
+    "turbo": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest",
+    "zod": "latest"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "latest",
+    "@chainsafe/libp2p-noise": "latest",
+    "@chainsafe/libp2p-yamux": "latest",
+    "@libp2p/identify": "latest",
+    "@libp2p/kad-dht": "latest",
+    "@libp2p/ping": "latest",
+    "@libp2p/tcp": "latest",
+    "@prisma/client": "latest",
+    "libp2p": "latest",
+    "pg": "latest",
+    "redis": "latest"
+  }
 }

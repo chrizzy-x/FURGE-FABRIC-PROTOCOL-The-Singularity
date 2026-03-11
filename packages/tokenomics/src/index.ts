@@ -1,94 +1,64 @@
-import { createMoney, makeId, nowIso, roundAmount, type BalanceSnapshot, type ChainId, type CostEstimate, type FeeJournalEntry, type MoneyAmount } from "@furge/shared-types";
-import type { ChainConfig } from "@furge/chain-builder";
+import {
+  PROTOCOL_TOKEN_SYMBOL,
+  ProtocolFeeEventSchema,
+  type ProtocolFeeEvent,
+  makeDeterministicId,
+  nowIso
+} from "@ffp/shared-types";
 
-export class TokenLedger {
-  private readonly balances = new Map<string, number>();
-  private readonly journals: FeeJournalEntry[] = [];
+export class FurgeFeeLedger {
+  private readonly events: ProtocolFeeEvent[] = [];
 
-  constructor(initialBalances: BalanceSnapshot[] = []) {
-    initialBalances.forEach((balance) => {
-      this.balances.set(this.key(balance.ownerId, balance.token), balance.amount);
+  recordBridgeFee(input: { payerId: string; referenceId: string; amount: number; payeeId?: string }): ProtocolFeeEvent {
+    const event = ProtocolFeeEventSchema.parse({
+      feeEventId: makeDeterministicId("fee", `${input.referenceId}:bridge:${this.events.length}`),
+      tokenSymbol: PROTOCOL_TOKEN_SYMBOL,
+      amount: Number(input.amount.toFixed(6)),
+      kind: "bridge",
+      payerId: input.payerId,
+      payeeId: input.payeeId,
+      referenceId: input.referenceId,
+      createdAt: nowIso()
     });
+    this.events.push(event);
+    return event;
   }
 
-  private key(ownerId: string, token: string): string {
-    return `${ownerId}:${token}`;
-  }
-
-  credit(ownerId: string, token: string, amount: number): void {
-    const key = this.key(ownerId, token);
-    this.balances.set(key, roundAmount((this.balances.get(key) ?? 0) + amount));
-  }
-
-  debit(ownerId: string, token: string, amount: number): void {
-    this.credit(ownerId, token, -amount);
-  }
-
-  transfer(params: { chain: ChainId; payerId: string; payeeId: string; token: string; amount: number; kind: FeeJournalEntry["kind"]; proposalId?: string }): FeeJournalEntry {
-    this.debit(params.payerId, params.token, params.amount);
-    this.credit(params.payeeId, params.token, params.amount);
-    const entry: FeeJournalEntry = {
-      id: makeId("journal", `${params.chain}:${params.kind}:${params.payerId}:${params.payeeId}:${params.amount}:${this.journals.length}`),
-      chain: params.chain,
-      proposalId: params.proposalId,
-      payerId: params.payerId,
-      payeeId: params.payeeId,
-      token: params.token,
-      amount: roundAmount(params.amount),
-      kind: params.kind,
-      timestamp: nowIso()
-    };
-    this.journals.push(entry);
-    return entry;
-  }
-
-  burnProtocolFee(chain: ChainId, payerId: string, amount: number, proposalId?: string): FeeJournalEntry {
-    return this.transfer({
-      chain,
-      payerId,
-      payeeId: "furge-burn",
-      token: "FURGE",
-      amount,
-      kind: "protocol-burn",
-      proposalId
+  recordCoordinationFee(input: { payerId: string; referenceId: string; amount: number; payeeId?: string }): ProtocolFeeEvent {
+    const event = ProtocolFeeEventSchema.parse({
+      feeEventId: makeDeterministicId("fee", `${input.referenceId}:coordination:${this.events.length}`),
+      tokenSymbol: PROTOCOL_TOKEN_SYMBOL,
+      amount: Number(input.amount.toFixed(6)),
+      kind: "coordination",
+      payerId: input.payerId,
+      payeeId: input.payeeId,
+      referenceId: input.referenceId,
+      createdAt: nowIso()
     });
+    this.events.push(event);
+    return event;
   }
 
-  estimateQueryCost(chain: ChainConfig, complexity: "low" | "medium" | "high", minAgents: number): CostEstimate {
-    const base = complexity === "high" ? 14 : complexity === "medium" ? 9 : 5;
-    const agentComponent = minAgents * 1.25;
-    const riskComponent = chain.chainName === "MedicalChain" || chain.chainName === "LegalChain" ? 4 : 2;
-    const amount = roundAmount(base + agentComponent + riskComponent);
-    return {
-      chain: chain.chainName,
-      token: chain.input.nativeToken,
-      amount,
-      breakdown: [
-        { label: "base", amount: base },
-        { label: "agent-weight", amount: roundAmount(agentComponent) },
-        { label: "domain-risk", amount: riskComponent }
-      ]
-    };
+  importEvent(event: ProtocolFeeEvent): void {
+    this.events.push(ProtocolFeeEventSchema.parse(event));
   }
 
-  getBalances(ownerId: string): BalanceSnapshot[] {
-    return Array.from(this.balances.entries())
-      .filter(([key]) => key.startsWith(`${ownerId}:`))
-      .map(([key, amount]) => {
-        const token = key.split(":")[1] ?? "UNKNOWN";
-        return {
-          ownerId,
-          token,
-          amount
-        };
-      });
+  listEvents(): ProtocolFeeEvent[] {
+    return [...this.events];
   }
 
-  getBalance(ownerId: string, token: string): MoneyAmount {
-    return createMoney(token, this.balances.get(this.key(ownerId, token)) ?? 0);
+  getBalanceSheet(): Record<string, number> {
+    const balanceSheet: Record<string, number> = {};
+    for (const event of this.events) {
+      balanceSheet[event.payerId] = Number(((balanceSheet[event.payerId] ?? 0) - event.amount).toFixed(6));
+      if (event.payeeId) {
+        balanceSheet[event.payeeId] = Number(((balanceSheet[event.payeeId] ?? 0) + event.amount).toFixed(6));
+      }
+    }
+    return balanceSheet;
   }
+}
 
-  getJournals(): FeeJournalEntry[] {
-    return [...this.journals];
-  }
+export function estimateBridgeFee(payloadSize: number, peerCount: number): number {
+  return Number((0.0005 + payloadSize * 0.000001 + peerCount * 0.0002).toFixed(6));
 }

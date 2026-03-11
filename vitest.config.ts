@@ -1,11 +1,13 @@
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { defineConfig } from "vitest/config";
-import { resolve } from "node:path";
+
+const rootDir = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["packages/**/*.test.ts", "apps/api/**/*.test.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"]
@@ -13,17 +15,14 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@furge/shared-types": resolve("packages/shared-types/src/index.ts"),
-      "@furge/protocol-core": resolve("packages/protocol-core/src/index.ts"),
-      "@furge/consensus": resolve("packages/consensus/src/index.ts"),
-      "@furge/chain-builder": resolve("packages/chain-builder/src/index.ts"),
-      "@furge/agent-node": resolve("packages/agent-node/src/index.ts"),
-      "@furge/sdk": resolve("packages/sdk/src/index.ts"),
-      "@furge/bridges": resolve("packages/bridges/src/index.ts"),
-      "@furge/tokenomics": resolve("packages/tokenomics/src/index.ts"),
-      "@furge/marketplace": resolve("packages/marketplace/src/index.ts"),
-      "@furge/metaverse": resolve("packages/metaverse/src/index.ts"),
-      "@furge/dev-tools": resolve("packages/dev-tools/src/index.ts")
+      "@ffp/shared-types": resolve(rootDir, "packages/shared-types/src/index.ts"),
+      "@ffp/protocol-core": resolve(rootDir, "packages/protocol-core/src/index.ts"),
+      "@ffp/consensus": resolve(rootDir, "packages/consensus/src/index.ts"),
+      "@ffp/bridges": resolve(rootDir, "packages/bridges/src/index.ts"),
+      "@ffp/tokenomics": resolve(rootDir, "packages/tokenomics/src/index.ts"),
+      "@ffp/agent-node": resolve(rootDir, "packages/agent-node/src/index.ts"),
+      "@ffp/sdk": resolve(rootDir, "packages/sdk/src/index.ts"),
+      "@ffp/dev-tools": resolve(rootDir, "packages/dev-tools/src/index.ts")
     }
   }
 });

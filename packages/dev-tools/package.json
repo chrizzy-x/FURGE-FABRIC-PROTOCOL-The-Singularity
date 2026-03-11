@@ -1,30 +1,29 @@
-﻿{
-    "name":  "@furge/dev-tools",
-    "version":  "1.0.0",
-    "type":  "module",
-    "main":  "./dist/index.js",
-    "types":  "./dist/index.d.ts",
-    "exports":  {
-                    ".":  {
-                              "types":  "./dist/index.d.ts",
-                              "default":  "./dist/index.js"
-                          }
-                },
-    "scripts":  {
-                    "build":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
-                    "dev":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --watch",
-                    "lint":  "node ../../node_modules/eslint/bin/eslint.js src --ext .ts,.tsx",
-                    "typecheck":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
-                },
-    "dependencies":  {
-                         "@furge/metaverse":  "workspace:*",
-                         "@furge/tokenomics":  "workspace:*",
-                         "@furge/marketplace":  "workspace:*",
-                         "@furge/agent-node":  "workspace:*",
-                         "@furge/chain-builder":  "workspace:*",
-                         "@furge/shared-types":  "workspace:*",
-                         "@furge/consensus":  "workspace:*",
-                         "@furge/protocol-core":  "workspace:*",
-                         "@furge/bridges":  "workspace:*"
-                     }
+{
+  "name": "@ffp/dev-tools",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "dev": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json --watch",
+    "lint": "node ../../node_modules/eslint/bin/eslint.js src test --ext .ts --no-error-on-unmatched-pattern",
+    "typecheck": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test"
+  },
+  "dependencies": {
+    "@ffp/agent-node": "workspace:*",
+    "@ffp/bridges": "workspace:*",
+    "@ffp/consensus": "workspace:*",
+    "@ffp/protocol-core": "workspace:*",
+    "@ffp/sdk": "workspace:*",
+    "@ffp/shared-types": "workspace:*",
+    "@ffp/tokenomics": "workspace:*"
+  }
 }

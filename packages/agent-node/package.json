@@ -1,22 +1,35 @@
-﻿{
-    "name":  "@furge/agent-node",
-    "version":  "1.0.0",
-    "type":  "module",
-    "main":  "./dist/index.js",
-    "types":  "./dist/index.d.ts",
-    "exports":  {
-                    ".":  {
-                              "types":  "./dist/index.d.ts",
-                              "default":  "./dist/index.js"
-                          }
-                },
-    "scripts":  {
-                    "build":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
-                    "dev":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --watch",
-                    "lint":  "node ../../node_modules/eslint/bin/eslint.js src --ext .ts,.tsx",
-                    "typecheck":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
-                },
-    "dependencies":  {
-                         "@furge/shared-types":  "workspace:*"
-                     }
+{
+  "name": "@ffp/agent-node",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "dev": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json --watch",
+    "lint": "node ../../node_modules/eslint/bin/eslint.js src test --ext .ts --no-error-on-unmatched-pattern",
+    "typecheck": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test --passWithNoTests"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-gossipsub": "latest",
+    "@chainsafe/libp2p-noise": "latest",
+    "@chainsafe/libp2p-yamux": "latest",
+    "@ffp/bridges": "workspace:*",
+    "@ffp/consensus": "workspace:*",
+    "@ffp/protocol-core": "workspace:*",
+    "@ffp/shared-types": "workspace:*",
+    "@ffp/tokenomics": "workspace:*",
+    "@libp2p/identify": "latest",
+    "@libp2p/kad-dht": "latest",
+    "@libp2p/ping": "latest",
+    "@libp2p/tcp": "latest",
+    "libp2p": "latest"
+  }
 }

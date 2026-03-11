@@ -15,9 +15,10 @@
 
 ## Run
 
-- Start the protocol API with the root API script.
-- Start the deterministic local network with the dev-tools bootstrap script.
-- Run benchmarks and smoke helpers from `scripts/`.
+- Start the protocol API with `corepack pnpm api:dev`.
+- Bootstrap the deterministic 5-node reference network with `corepack pnpm network:bootstrap`.
+- Run the end-to-end protocol smoke flow with `corepack pnpm smoke`.
+- Run the consensus benchmark with `corepack pnpm bench`.
 
 ## Workspace Notes
 

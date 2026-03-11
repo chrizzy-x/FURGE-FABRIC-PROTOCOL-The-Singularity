@@ -1,22 +1,20 @@
-﻿{
-    "name":  "@furge/api",
-    "version":  "1.0.0",
-    "private":  true,
-    "type":  "module",
-    "scripts":  {
-                    "build":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json",
-                    "dev":  "node ../../node_modules/tsx/dist/cli.mjs watch src/server.ts",
-                    "lint":  "node ../../node_modules/eslint/bin/eslint.js src --ext .ts",
-                    "typecheck":  "node ../../node_modules/typescript/bin/tsc -p tsconfig.json --noEmit"
-                },
-    "dependencies":  {
-                         "@furge/bridges":  "workspace:*",
-                         "@furge/metaverse":  "workspace:*",
-                         "@furge/shared-types":  "workspace:*",
-                         "@furge/sdk":  "workspace:*",
-                         "@furge/dev-tools":  "workspace:*",
-                         "@furge/marketplace":  "workspace:*",
-                         "@fastify/cors":  "latest",
-                         "fastify":  "latest"
-                     }
+{
+  "name": "@ffp/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "dev": "node ../../node_modules/tsx/dist/cli.mjs watch src/server.ts",
+    "lint": "node ../../node_modules/eslint/bin/eslint.js src test --ext .ts --no-error-on-unmatched-pattern",
+    "typecheck": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test"
+  },
+  "dependencies": {
+    "@fastify/cors": "latest",
+    "@ffp/dev-tools": "workspace:*",
+    "@ffp/sdk": "workspace:*",
+    "@ffp/shared-types": "workspace:*",
+    "fastify": "latest"
+  }
 }

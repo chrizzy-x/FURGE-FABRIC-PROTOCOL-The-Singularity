@@ -17,3 +17,4 @@
 - `corepack pnpm typecheck`
 - `corepack pnpm test`
 - `corepack pnpm build`
+- `corepack pnpm smoke`

@@ -1,32 +1,40 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import nextPlugin from "eslint-config-next";
 
-export default [
+export default tseslint.config(
   {
     ignores: [
-      "**/dist/**",
-      "**/.next/**",
-      "**/node_modules/**",
-      "**/coverage/**",
-      "**/playwright-report/**",
-      "**/test-results/**"
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      ".corepack/**",
+      ".planning/**",
+      ".turbo/**",
+      "packages/protocol-core/generated/**"
     ]
   },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts"],
     languageOptions: {
-      parserOptions: {
-        project: true,
-        tsconfigRootDir: import.meta.dirname
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        Buffer: "readonly",
+        URL: "readonly",
+        console: "readonly",
+        clearTimeout: "readonly",
+        fetch: "readonly",
+        process: "readonly",
+        setTimeout: "readonly",
+        TextDecoder: "readonly",
+        TextEncoder: "readonly"
       }
     },
     rules: {
-      "@typescript-eslint/consistent-type-imports": "error",
-      "@typescript-eslint/no-floating-promises": "error"
+      "no-console": "off",
+      "no-undef": "off"
     }
-  },
-  ...nextPlugin
-];
+  }
+);

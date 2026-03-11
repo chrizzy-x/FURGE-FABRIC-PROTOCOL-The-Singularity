@@ -1,99 +1,86 @@
-import type { BalanceSnapshot, ChainId, ConsensusQuery, ConsensusQueryResult, CostEstimate, ExplorerProposalTrace, FurgeTransport, MarketplacePurchaseRequest, MetaverseSession, PlatformSnapshot, PresenceUpdateRequest } from "@furge/shared-types";
+import {
+  BlockSchema,
+  BridgeExecutionReportSchema,
+  ProtocolFeeEventSchema,
+  ProposalSchema,
+  type Block,
+  type BridgeExecutionResolution,
+  type BridgeRequest,
+  type ProtocolSnapshot,
+  type ProposalResolution,
+  type ProposalSubmission
+} from "@ffp/shared-types";
 
-export class ChainClient {
-  private connected = false;
-  public readonly chainName: ChainId;
-  private readonly transport: FurgeTransport;
+export class ProtocolClient {
+  constructor(private readonly baseUrl: string) {}
 
-  constructor(config: { chainName: ChainId; transport: FurgeTransport }) {
-    this.chainName = config.chainName;
-    this.transport = config.transport;
+  async getHealth(): Promise<{ ok: boolean; service: string }> {
+    return this.fetchJson<{ ok: boolean; service: string }>("/health");
   }
 
-  async connect(): Promise<void> {
-    await this.transport.connect();
-    this.connected = true;
+  async getSnapshot(): Promise<ProtocolSnapshot> {
+    return this.fetchJson<ProtocolSnapshot>("/snapshot");
   }
 
-  async consensusQuery(payload: Omit<ConsensusQuery, "chain">): Promise<ConsensusQueryResult> {
-    if (!this.connected) {
-      await this.connect();
-    }
-    return this.transport.query({ ...payload, chain: this.chainName });
+  async listAgents(): Promise<ProtocolSnapshot["agents"]> {
+    const snapshot = await this.getSnapshot();
+    return snapshot.agents;
   }
 
-  async estimateQueryCost(payload: Pick<ConsensusQuery, "type" | "minAgents">): Promise<CostEstimate> {
-    return this.transport.estimateCost({
-      chain: this.chainName,
-      type: payload.type,
-      minAgents: payload.minAgents
+  async listProposals(): Promise<ProtocolSnapshot["proposals"]> {
+    const proposals = await this.fetchJson<unknown[]>("/proposals");
+    return proposals.map((proposal) => ProposalSchema.parse(proposal));
+  }
+
+  async getProposal(proposalId: string): Promise<ProposalResolution> {
+    return this.fetchJson<ProposalResolution>(`/proposals/${proposalId}`);
+  }
+
+  async submitProposal(input: ProposalSubmission): Promise<ProposalResolution> {
+    return this.fetchJson<ProposalResolution>("/proposals", {
+      method: "POST",
+      body: JSON.stringify(input)
     });
   }
 
-  async getSnapshot(): Promise<PlatformSnapshot> {
-    return this.transport.getSnapshot();
+  async listBlocks(): Promise<Block[]> {
+    const blocks = await this.fetchJson<unknown[]>("/blocks");
+    return blocks.map((block) => BlockSchema.parse(block));
   }
 
-  async getExplorerTrace(proposalId: string): Promise<ExplorerProposalTrace> {
-    return this.transport.getExplorerTrace(proposalId);
+  async listBridgeRuns(): Promise<ProtocolSnapshot["bridgeReports"]> {
+    return this.fetchJson<ProtocolSnapshot["bridgeReports"]>("/bridges/runs");
   }
 
-  async getBalances(ownerId: string): Promise<BalanceSnapshot[]> {
-    return this.transport.getBalances(ownerId);
+  async executeBridge(request: Omit<BridgeRequest, "requestId" | "createdAt">): Promise<BridgeExecutionResolution> {
+    return this.fetchJson<BridgeExecutionResolution>("/bridges/execute", {
+      method: "POST",
+      body: JSON.stringify(request)
+    });
   }
 
-  getWallet(ownerId: string): { getBalance(token: string): Promise<number> } {
-    return {
-      getBalance: async (token: string) => {
-        const balances = await this.transport.getBalances(ownerId);
-        return balances.find((balance) => balance.token === token)?.amount ?? 0;
+  async listFees() {
+    const fees = await this.fetchJson<unknown[]>("/fees");
+    return fees.map((event) => ProtocolFeeEventSchema.parse(event));
+  }
+
+  private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        ...(init?.headers ?? {})
       }
-    };
-  }
-}
-
-export class CrossChainBridge {
-  constructor(private readonly clients: ChainClient[]) {}
-
-  async coordinatedQuery(input: {
-    primary: Omit<ConsensusQuery, "requesterId"> & { requesterId?: string };
-    dependencies: Array<Omit<ConsensusQuery, "requesterId"> & { requesterId?: string }>;
-  }): Promise<Record<string, ConsensusQueryResult>> {
-    const byChain = new Map<ChainId, ChainClient>();
-    this.clients.forEach((client) => {
-      byChain.set(client.chainName, client);
     });
 
-    const results: Record<string, ConsensusQueryResult> = {};
-    const primaryClient = byChain.get(input.primary.chain);
-    if (!primaryClient) {
-      throw new Error(`Primary client for ${input.primary.chain} is not configured`);
+    if (!response.ok) {
+      throw new Error(`ProtocolClient request failed with ${response.status}`);
     }
 
-    results[input.primary.chain] = await primaryClient.consensusQuery({
-      ...input.primary,
-      requesterId: input.primary.requesterId ?? "cross-chain-orchestrator"
-    });
-
-    for (const dependency of input.dependencies) {
-      const client = byChain.get(dependency.chain);
-      if (!client) {
-        throw new Error(`Dependency client for ${dependency.chain} is not configured`);
-      }
-      results[dependency.chain] = await client.consensusQuery({
-        ...dependency,
-        requesterId: dependency.requesterId ?? input.primary.requesterId ?? "cross-chain-orchestrator"
-      });
+    const payload = (await response.json()) as T & { bridgeReport?: unknown };
+    if (path.startsWith("/bridges/execute") && payload.bridgeReport) {
+      BridgeExecutionReportSchema.parse(payload.bridgeReport);
     }
-
-    return results;
+    return payload;
   }
-}
-
-export async function executeMarketplacePurchase(transport: FurgeTransport, request: MarketplacePurchaseRequest) {
-  return transport.buySkill(request);
-}
-
-export async function recordPresence(transport: FurgeTransport, request: PresenceUpdateRequest): Promise<MetaverseSession> {
-  return transport.updatePresence(request);
 }

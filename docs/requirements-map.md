@@ -11,4 +11,4 @@ This map ties the current implementation scope to the updated source documents.
 | P2P networking | Technical Specification | Direct peer discovery and protocol messaging without a central coordinator |
 | Bridge architecture | Technical Specification, Economic Model | Bridge capabilities are registered and audited; external payloads are validated before trusted use |
 | Protocol token scope | Executive Summary, Technical Specification, Economic Model | `$FURGE` is used only for cross-chain coordination and bridge-level protocol fees |
-| Layer boundary | Executive Summary, Technical Specification, Scope Clarification | No Layer 1 chain logic, no Layer 2 app logic, no UI surfaces in active repo scope |
+| Layer boundary | Executive Summary, Technical Specification, Real-World Use Cases | No Layer 1 chain logic, no Layer 2 app logic, and no UI surfaces in active repo scope |

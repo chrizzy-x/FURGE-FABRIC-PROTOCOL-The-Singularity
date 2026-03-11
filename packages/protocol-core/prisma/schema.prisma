@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AgentRecord {
+  id            String            @id
+  label         String
+  modelFamily   String
+  publicKey     String
+  capabilities  Json
+  reputation    Float             @default(100)
+  createdAt     DateTime
+  proposals     Proposal[]        @relation("proposal_proposer")
+  votes         Vote[]            @relation("vote_voter")
+  reputationLog ReputationEvent[]
+  feesPaid      ProtocolFeeEvent[] @relation("fee_payer")
+  feesReceived  ProtocolFeeEvent[] @relation("fee_payee")
+}
+
+model Proposal {
+  id          String    @id
+  proposerId  String
+  subject     String
+  summary     String
+  payload     Json
+  tags        Json
+  createdAt   DateTime
+  expiresAt   DateTime
+  status      String
+  proposer    AgentRecord @relation("proposal_proposer", fields: [proposerId], references: [id])
+  votes       Vote[]
+  block       Block?
+}
+
+model Vote {
+  id         String   @id
+  proposalId String
+  voterId    String
+  decision   String
+  confidence Float
+  reason     String
+  createdAt  DateTime
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  voter      AgentRecord @relation("vote_voter", fields: [voterId], references: [id])
+}
+
+model Block {
+  id          String   @id
+  height      Int      @unique
+  previousHash String
+  hash        String
+  createdAt   DateTime
+  proposalId  String   @unique
+  payload     Json
+  proposal    Proposal @relation(fields: [proposalId], references: [id])
+}
+
+model ReputationEvent {
+  id         String   @id
+  agentId    String
+  proposalId String
+  delta      Float
+  before     Float
+  after      Float
+  reason     String
+  createdAt  DateTime
+  agent      AgentRecord @relation(fields: [agentId], references: [id])
+}
+
+model BridgeRun {
+  id              String   @id
+  adapterId       String
+  requestId       String   @unique
+  status          String
+  validation      Json
+  response        Json
+  recovery        Json?
+  consensusStatus String
+  createdAt       DateTime
+}
+
+model ProtocolFeeEvent {
+  id          String   @id
+  tokenSymbol String
+  amount      Float
+  kind        String
+  payerId     String
+  payeeId     String?
+  referenceId String
+  createdAt   DateTime
+  payer       AgentRecord @relation("fee_payer", fields: [payerId], references: [id])
+  payee       AgentRecord? @relation("fee_payee", fields: [payeeId], references: [id])
+}
