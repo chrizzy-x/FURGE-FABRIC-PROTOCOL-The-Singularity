@@ -7,13 +7,17 @@ import {
   nowIso,
   type AgentCapability,
   type BridgeExecutionResolution,
+  type BridgeExecutionReport,
   type BridgeRequest,
   type ModelFamily,
   type ProposalResolution,
   type ProposalSubmission,
+  type ProtocolFeeEvent,
   type ProtocolSnapshot,
+  type ReputationEvent,
   type Vote
 } from "@ffp/shared-types";
+import { createProtocolRuntimeStoreFromEnv, type PersistedRuntimeSnapshot, type ProtocolRuntimeStore } from "./persistence.js";
 
 const REFERENCE_PROFILES: Array<{ label: string; modelFamily: ModelFamily; capabilities: AgentCapability[] }> = [
   { label: "Claude Sentinel", modelFamily: "claude", capabilities: ["audit", "coordination"] },
@@ -23,13 +27,22 @@ const REFERENCE_PROFILES: Array<{ label: string; modelFamily: ModelFamily; capab
   { label: "Grok Scout", modelFamily: "grok", capabilities: ["observability", "network"] }
 ];
 
+export type LocalNetworkOptions = {
+  persistence?: ProtocolRuntimeStore;
+};
+
 export class LocalNetwork {
   private readonly nodes: AgentNode[] = [];
+  private readonly persistence?: ProtocolRuntimeStore;
   private started = false;
-  private readonly startedAt = new Date().toISOString();
+  private startedAt = new Date().toISOString();
 
-  static async bootstrap(): Promise<LocalNetwork> {
-    const network = new LocalNetwork();
+  constructor(options: LocalNetworkOptions = {}) {
+    this.persistence = options.persistence;
+  }
+
+  static async bootstrap(options: LocalNetworkOptions = {}): Promise<LocalNetwork> {
+    const network = new LocalNetwork(options);
     await network.start();
     return network;
   }
@@ -39,13 +52,9 @@ export class LocalNetwork {
       return;
     }
 
-    const identities = REFERENCE_PROFILES.map((profile) =>
-      AgentIdentity.generate({
-        label: profile.label,
-        modelFamily: profile.modelFamily,
-        capabilities: profile.capabilities
-      })
-    );
+    await this.persistence?.connect();
+
+    const identities = await this.loadOrCreateIdentities();
     const seedAgents = identities.map((identity) => identity.exportPublicRecord());
 
     for (const [index, identity] of identities.entries()) {
@@ -68,7 +77,9 @@ export class LocalNetwork {
     }
 
     await new Promise((resolve) => setTimeout(resolve, 500));
+    await this.restoreRuntimeState();
     this.started = true;
+    await this.persistRuntimeState();
   }
 
   async stop(): Promise<void> {
@@ -77,15 +88,21 @@ export class LocalNetwork {
     }
     this.nodes.length = 0;
     this.started = false;
+    await this.persistence?.disconnect();
   }
 
   async reset(): Promise<void> {
+    await this.persistence?.clearRuntimeState();
     await this.stop();
     await this.start();
   }
 
   getNodes(): AgentNode[] {
     return [...this.nodes];
+  }
+
+  isPersistenceEnabled(): boolean {
+    return Boolean(this.persistence?.enabled);
   }
 
   async submitProposal(input: ProposalSubmission): Promise<ProposalResolution> {
@@ -142,12 +159,15 @@ export class LocalNetwork {
       throw new Error(`Proposal ${proposal.proposalId} did not produce a finalized block`);
     }
 
-    return {
+    const resolution = {
       proposal: coordinator.core.getProposal(proposal.proposalId),
       result: progress,
       votes,
       block
-    };
+    } satisfies ProposalResolution;
+
+    await this.persistRuntimeState();
+    return resolution;
   }
 
   async executeBridge(request: Omit<BridgeRequest, "requestId" | "createdAt">): Promise<BridgeExecutionResolution> {
@@ -164,6 +184,7 @@ export class LocalNetwork {
     }
 
     const { report, feeEvent } = await this.getCoordinator().executeBridge(request, proposalResolution.result);
+    await this.persistRuntimeState();
     return {
       proposalResolution,
       bridgeReport: report,
@@ -178,16 +199,75 @@ export class LocalNetwork {
     };
   }
 
-  listBridgeReports() {
+  listBridgeReports(): BridgeExecutionReport[] {
     return this.getSnapshot().bridgeReports;
   }
 
-  listFees() {
+  listFees(): ProtocolFeeEvent[] {
     return this.getSnapshot().feeEvents;
   }
 
   getStartedAt(): string {
     return this.startedAt;
+  }
+
+  private async loadOrCreateIdentities(): Promise<AgentIdentity[]> {
+    const restored = await this.persistence?.loadNodeIdentities();
+    if (restored && restored.length === REFERENCE_PROFILES.length) {
+      return restored;
+    }
+
+    const identities = REFERENCE_PROFILES.map((profile) =>
+      AgentIdentity.generate({
+        label: profile.label,
+        modelFamily: profile.modelFamily,
+        capabilities: profile.capabilities
+      })
+    );
+
+    await this.persistence?.saveNodeIdentities(identities);
+    return identities;
+  }
+
+  private async restoreRuntimeState(): Promise<void> {
+    const snapshot = (await this.persistence?.loadRuntimeSnapshot()) ?? (await this.persistence?.readCachedSnapshot()) ?? null;
+    if (!snapshot) {
+      return;
+    }
+
+    this.startedAt = snapshot.startedAt;
+    for (const node of this.nodes) {
+      this.restoreNode(node, snapshot);
+    }
+  }
+
+  private restoreNode(node: AgentNode, snapshot: PersistedRuntimeSnapshot): void {
+    for (const proposal of [...snapshot.proposals].sort((left, right) => left.createdAt.localeCompare(right.createdAt))) {
+      if (!node.core.hasProposal(proposal.proposalId)) {
+        node.core.submitProposal(proposal);
+      }
+    }
+
+    for (const block of [...snapshot.blocks].sort((left, right) => left.height - right.height)) {
+      for (const vote of [...block.votes].sort((left, right) => left.createdAt.localeCompare(right.createdAt))) {
+        node.core.recordVote(vote);
+      }
+
+      const reputationEvents = this.selectReputationEvents(snapshot.reputationEvents, block.proposal.proposalId);
+      node.core.applyFinalizationBroadcast({ block, reputationEvents });
+    }
+
+    for (const report of snapshot.bridgeReports) {
+      node.bridgeRegistry.importReport(report);
+    }
+
+    for (const feeEvent of snapshot.feeEvents) {
+      node.feeLedger.importEvent(feeEvent);
+    }
+  }
+
+  private selectReputationEvents(events: ReputationEvent[], proposalId: string): ReputationEvent[] {
+    return events.filter((event) => event.proposalId === proposalId);
   }
 
   private forceAcceptedBridgeProposal(request: Omit<BridgeRequest, "requestId" | "createdAt">): ProposalResolution {
@@ -247,6 +327,24 @@ export class LocalNetwork {
     };
   }
 
+  private async persistRuntimeState(): Promise<void> {
+    if (!this.persistence?.enabled || this.nodes.length === 0) {
+      return;
+    }
+
+    const snapshot = this.getSnapshot();
+    await this.persistence.saveRuntimeSnapshot({
+      startedAt: this.startedAt,
+      agents: snapshot.agents,
+      proposals: snapshot.proposals,
+      blocks: snapshot.blocks,
+      reputationEvents: snapshot.reputationEvents,
+      bridgeReports: snapshot.bridgeReports,
+      feeEvents: snapshot.feeEvents,
+      auditTrail: snapshot.auditTrail
+    });
+  }
+
   private getCoordinator(): AgentNode {
     const coordinator = this.nodes[0];
     if (!coordinator) {
@@ -256,6 +354,10 @@ export class LocalNetwork {
   }
 }
 
-export async function createReferenceLocalNetwork(): Promise<LocalNetwork> {
-  return LocalNetwork.bootstrap();
+export async function createReferenceLocalNetwork(options: LocalNetworkOptions = {}): Promise<LocalNetwork> {
+  return LocalNetwork.bootstrap({
+    persistence: options.persistence ?? createProtocolRuntimeStoreFromEnv()
+  });
 }
+
+export { createProtocolRuntimeStoreFromEnv, ProtocolRuntimeStore } from "./persistence.js";

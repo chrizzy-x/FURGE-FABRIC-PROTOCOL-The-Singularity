@@ -1,68 +1,85 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/client"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+model RuntimeState {
+  id        String   @id
+  startedAt DateTime
+  updatedAt DateTime @updatedAt
+}
+
+model NodeIdentity {
+  slot         Int      @id
+  agentId      String   @unique
+  label        String
+  modelFamily  String
+  capabilities Json
+  publicKey    String
+  privateKey   String
+  createdAt    DateTime
 }
 
 model AgentRecord {
-  id            String            @id
+  id            String             @id
   label         String
   modelFamily   String
   publicKey     String
   capabilities  Json
-  reputation    Float             @default(100)
+  reputation    Float              @default(100)
   createdAt     DateTime
-  proposals     Proposal[]        @relation("proposal_proposer")
-  votes         Vote[]            @relation("vote_voter")
+  proposals     Proposal[]         @relation("proposal_proposer")
+  votes         Vote[]             @relation("vote_voter")
   reputationLog ReputationEvent[]
   feesPaid      ProtocolFeeEvent[] @relation("fee_payer")
   feesReceived  ProtocolFeeEvent[] @relation("fee_payee")
 }
 
 model Proposal {
-  id          String    @id
-  proposerId  String
-  subject     String
-  summary     String
-  payload     Json
-  tags        Json
-  createdAt   DateTime
-  expiresAt   DateTime
-  status      String
-  proposer    AgentRecord @relation("proposal_proposer", fields: [proposerId], references: [id])
-  votes       Vote[]
-  block       Block?
+  id         String      @id
+  proposerId String
+  subject    String
+  summary    String
+  payload    Json
+  tags       Json
+  createdAt  DateTime
+  expiresAt  DateTime
+  status     String
+  proposer   AgentRecord @relation("proposal_proposer", fields: [proposerId], references: [id])
+  votes      Vote[]
+  block      Block?
 }
 
 model Vote {
-  id         String   @id
+  id         String      @id
   proposalId String
   voterId    String
   decision   String
   confidence Float
   reason     String
   createdAt  DateTime
-  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  proposal   Proposal    @relation(fields: [proposalId], references: [id])
   voter      AgentRecord @relation("vote_voter", fields: [voterId], references: [id])
+
+  @@unique([proposalId, voterId])
 }
 
 model Block {
-  id          String   @id
-  height      Int      @unique
+  id           String   @id
+  height       Int      @unique
   previousHash String
-  hash        String
-  createdAt   DateTime
-  proposalId  String   @unique
-  payload     Json
-  proposal    Proposal @relation(fields: [proposalId], references: [id])
+  hash         String
+  createdAt    DateTime
+  proposalId   String   @unique
+  payload      Json
+  proposal     Proposal @relation(fields: [proposalId], references: [id])
 }
 
 model ReputationEvent {
-  id         String   @id
+  id         String      @id
   agentId    String
   proposalId String
   delta      Float
@@ -71,6 +88,15 @@ model ReputationEvent {
   reason     String
   createdAt  DateTime
   agent      AgentRecord @relation(fields: [agentId], references: [id])
+}
+
+model AuditEvent {
+  id          String   @id
+  type        String
+  actorId     String
+  referenceId String
+  createdAt   DateTime
+  payload     Json
 }
 
 model BridgeRun {
@@ -86,7 +112,7 @@ model BridgeRun {
 }
 
 model ProtocolFeeEvent {
-  id          String   @id
+  id          String      @id
   tokenSymbol String
   amount      Float
   kind        String

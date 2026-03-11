@@ -22,7 +22,10 @@
     "network:bootstrap": "node ./node_modules/tsx/dist/cli.mjs scripts/bootstrap-network.ts",
     "smoke": "node ./node_modules/tsx/dist/cli.mjs scripts/smoke-network.ts",
     "bench": "node ./node_modules/tsx/dist/cli.mjs scripts/benchmark-consensus.ts",
-    "turbo:build": "node ./node_modules/turbo/bin/turbo run build"
+    "turbo:build": "node ./node_modules/turbo/bin/turbo run build",
+    "postinstall": "node ./node_modules/prisma/build/index.js generate --schema packages/protocol-core/prisma/schema.prisma",
+    "db:migrate": "node ./node_modules/prisma/build/index.js migrate deploy --schema packages/protocol-core/prisma/schema.prisma",
+    "db:push": "node ./node_modules/prisma/build/index.js db push --schema packages/protocol-core/prisma/schema.prisma"
   },
   "devDependencies": {
     "@eslint/js": "latest",

@@ -180,6 +180,12 @@ importers:
       '@ffp/tokenomics':
         specifier: workspace:*
         version: link:../tokenomics
+      '@prisma/client':
+        specifier: latest
+        version: 7.4.2(prisma@7.4.2(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+      redis:
+        specifier: latest
+        version: 5.11.0
 
   packages/protocol-core:
     dependencies:

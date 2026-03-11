@@ -1,6 +1,7 @@
-import { createReferenceLocalNetwork } from "../packages/dev-tools/src/index.ts";
+import { createProtocolRuntimeStoreFromEnv, createReferenceLocalNetwork } from "../packages/dev-tools/src/index.ts";
 
-const network = await createReferenceLocalNetwork();
+const persistence = createProtocolRuntimeStoreFromEnv();
+const network = await createReferenceLocalNetwork({ persistence });
 const proposal = await network.submitProposal({
   subject: "Reference network health check",
   summary: "Verify the five-node Layer 0 network can finalize a signed coordination proposal.",
@@ -18,5 +19,22 @@ const bridge = await network.executeBridge({
   },
   requestedBy: network.getSnapshot().agents[0].agentId
 });
-console.log(JSON.stringify({ proposal, bridge, snapshot: network.getSnapshot() }, null, 2));
-await network.stop();
+const snapshot = network.getSnapshot();
+
+let restored: { blockCount: number; bridgeRunCount: number; feeCount: number; restoredProposalIds: string[] } | undefined;
+if (network.isPersistenceEnabled()) {
+  await network.stop();
+  const restarted = await createReferenceLocalNetwork({ persistence: createProtocolRuntimeStoreFromEnv() });
+  const restoredSnapshot = restarted.getSnapshot();
+  restored = {
+    blockCount: restoredSnapshot.blocks.length,
+    bridgeRunCount: restoredSnapshot.bridgeReports.length,
+    feeCount: restoredSnapshot.feeEvents.length,
+    restoredProposalIds: restoredSnapshot.proposals.map((entry) => entry.proposalId)
+  };
+  console.log(JSON.stringify({ proposal, bridge, snapshot, restored }, null, 2));
+  await restarted.stop();
+} else {
+  console.log(JSON.stringify({ proposal, bridge, snapshot }, null, 2));
+  await network.stop();
+}

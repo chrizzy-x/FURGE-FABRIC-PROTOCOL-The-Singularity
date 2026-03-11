@@ -1,6 +1,6 @@
 # FURGE FABRIC PROTOCOL; The Singularity
 
-FURGE FABRIC PROTOCOL, or FFP, is Layer 0 coordination infrastructure for AI agents. This repository does not build domain chains, applications, metaverse experiences, marketplaces, or end-user interfaces. It builds the foundation those systems would run on: cryptographic agent identity, reputation-weighted Byzantine fault tolerant consensus, immutable hash-linked decision chains, peer-to-peer networking, and bridge specifications for external integrations.
+FURGE FABRIC PROTOCOL, or FFP, is Layer 0 coordination infrastructure for AI agents. This repository does not build domain chains, applications, metaverse experiences, marketplaces, or end-user interfaces. It builds the foundation those systems would run on: cryptographic agent identity, reputation-weighted Byzantine fault tolerant consensus, immutable hash-linked decision chains, peer-to-peer networking, bridge specifications for external integrations, and durable protocol state.
 
 The source of truth for this repository is the updated document set under `FFP docs/`:
 
@@ -13,9 +13,10 @@ The source of truth for this repository is the updated document set under `FFP d
 
 - Layer 0 protocol packages in TypeScript
 - A Fastify API for infrastructure-facing protocol operations
-- Local node and network tooling for deterministic 5-node protocol validation
-- Tests for identity, consensus, immutable chains, networking, bridges, and protocol fee events
-- Documentation that explains the Layer 0 boundary clearly
+- A deterministic 5-node libp2p reference network across Claude, GPT-4, Gemini, DeepSeek, and Grok agent profiles
+- Immutable proposal, vote, block, bridge, fee, and audit records
+- Prisma-backed PostgreSQL persistence and Redis snapshot caching for the live runtime path
+- Tests for identity, consensus, immutable chains, persistence, networking, bridges, and protocol fee events
 
 ## What This Repo Does Not Contain
 
@@ -34,11 +35,11 @@ FFP is responsible for six core areas:
 3. Immutable hash-linked blocks that record proposals, votes, and finalized outcomes
 4. Reputation tracking based on alignment with consensus outcomes
 5. Peer-to-peer discovery and messaging for autonomous agent coordination
-6. Bridge contracts and audited integration events for external systems
+6. Bridge contracts, audited integration events, and protocol-level `$FURGE` fee accounting
 
 ## Development
 
-The repo keeps the existing Windows-friendly TypeScript toolchain:
+The repo keeps the Windows-friendly TypeScript stack requested for the project:
 
 - Node.js 24
 - `corepack` managed `pnpm`
@@ -46,11 +47,19 @@ The repo keeps the existing Windows-friendly TypeScript toolchain:
 - TypeScript 5
 - Fastify
 - libp2p
-- Prisma and Redis kept as stack components for protocol infrastructure work
-- Vitest for automated coverage
+- Prisma with PostgreSQL
+- Redis
+- Vitest
+
+For the durable runtime path:
+
+1. Run `corepack pnpm infra:up`
+2. Run `corepack pnpm db:generate`
+3. Run `corepack pnpm db:migrate`
+4. Run `corepack pnpm api:dev` or `corepack pnpm smoke`
 
 Because the workspace path contains a semicolon, commands should call tool entrypoints explicitly where needed.
 
 ## Current Direction
 
-The repository previously contained a broader checkpoint that mixed Layer 0 protocol work with Layer 1 and Layer 2 concepts. That checkpoint is being corrected through follow-up commits. The active direction from this point forward is Layer 0 only.
+The repository previously contained a broader checkpoint that mixed Layer 0 protocol work with Layer 1 and Layer 2 concepts. The active direction from this point forward is Layer 0 only.

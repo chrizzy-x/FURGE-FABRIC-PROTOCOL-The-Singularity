@@ -104,6 +104,26 @@ export class AgentIdentity {
     });
   }
 
+  exportKeyMaterial(): {
+    agentId: string;
+    label: string;
+    modelFamily: ModelFamily;
+    capabilities: AgentCapability[];
+    publicKeyPem: string;
+    privateKeyPem: string;
+    createdAt: string;
+  } {
+    return {
+      agentId: this.agentId,
+      label: this.label,
+      modelFamily: this.modelFamily,
+      capabilities: [...this.capabilities],
+      publicKeyPem: this.publicKeyPem,
+      privateKeyPem: this.privateKeyPem,
+      createdAt: this.createdAt
+    };
+  }
+
   signEnvelope<T>(kind: SignedEnvelope<T>["kind"], payload: T): SignedEnvelope<T> {
     const createdAt = nowIso();
     const digest = AgentIdentity.digestEnvelope(kind, this.agentId, createdAt, payload);
@@ -342,7 +362,7 @@ export class ProtocolCore {
         type: "agent.registered",
         actorId: agent.agentId,
         referenceId: agent.agentId,
-        createdAt: nowIso(),
+        createdAt: normalized.createdAt,
         payload: {
           label: agent.label,
           modelFamily: agent.modelFamily,

@@ -13,7 +13,7 @@ export async function buildServer(options: BuildServerOptions = {}) {
 
   await app.register(cors, { origin: true });
 
-  app.get("/health", async () => ({ ok: true, service: "ffp-layer-zero-api" }));
+  app.get("/health", async () => ({ ok: true, service: "ffp-layer-zero-api", persistence: network.isPersistenceEnabled() ? "postgres" : "memory" }));
 
   app.get("/snapshot", async () => network.getSnapshot());
 

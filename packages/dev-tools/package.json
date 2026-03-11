@@ -24,6 +24,8 @@
     "@ffp/protocol-core": "workspace:*",
     "@ffp/sdk": "workspace:*",
     "@ffp/shared-types": "workspace:*",
-    "@ffp/tokenomics": "workspace:*"
+    "@ffp/tokenomics": "workspace:*",
+    "@prisma/client": "latest",
+    "redis": "latest"
   }
 }

@@ -9,6 +9,7 @@
 - Bridge registration and external payload validation hooks
 - Local 5-node network bootstrap and peer discovery
 - Proposal to vote to finalized block integration flow
+- Durable runtime persistence and restart hydration when `DATABASE_URL` is present
 - API routes over the protocol runtime
 
 ## Commands
