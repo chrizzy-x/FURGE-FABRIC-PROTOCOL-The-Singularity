@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { createClient, type RedisClientType } from "redis";
 import { AgentIdentity, type AgentIdentityImportInput } from "@ffp/protocol-core";
 import {
@@ -46,7 +47,8 @@ export class ProtocolRuntimeStore {
     process.env.DATABASE_URL = this.options.databaseUrl;
 
     if (!this.prisma) {
-      this.prisma = new PrismaClient();
+      const adapter = new PrismaPg({ connectionString: this.options.databaseUrl });
+      this.prisma = new PrismaClient({ adapter });
     }
 
     await this.prisma.$connect();
