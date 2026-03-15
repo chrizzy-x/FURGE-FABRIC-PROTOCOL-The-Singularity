@@ -22,7 +22,8 @@ export default defineConfig({
       "@ffp/tokenomics": resolve(rootDir, "packages/tokenomics/src/index.ts"),
       "@ffp/agent-node": resolve(rootDir, "packages/agent-node/src/index.ts"),
       "@ffp/sdk": resolve(rootDir, "packages/sdk/src/index.ts"),
-      "@ffp/dev-tools": resolve(rootDir, "packages/dev-tools/src/index.ts")
+      "@ffp/dev-tools": resolve(rootDir, "packages/dev-tools/src/index.ts"),
+      "@ffp/api": resolve(rootDir, "apps/api/src/server.ts")
     }
   }
 });

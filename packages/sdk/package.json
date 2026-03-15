@@ -15,7 +15,7 @@
     "dev": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json --watch",
     "lint": "node ../../node_modules/eslint/bin/eslint.js src test --ext .ts --no-error-on-unmatched-pattern",
     "typecheck": "node ../../node_modules/typescript/lib/tsc.js -b tsconfig.json",
-    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test --passWithNoTests"
+    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test"
   },
   "dependencies": {
     "@ffp/shared-types": "workspace:*"
