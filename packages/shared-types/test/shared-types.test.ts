@@ -290,6 +290,55 @@ describe("schema validation", () => {
     expect(result.success).toBe(true);
   });
 
+  test("BlockSchema accepts valid blocks", () => {
+    const now = nowIso();
+    const result = BlockSchema.safeParse({
+      blockId: "block-abc123",
+      height: 1,
+      previousHash: "GENESIS",
+      hash: "b".repeat(64),
+      createdAt: now,
+      proposal: {
+        proposalId: "proposal-1",
+        proposerId: VALID_AGENT_ID,
+        subject: "Block test",
+        summary: "Testing block schema validation.",
+        payload: { action: "test" },
+        tags: ["consensus"],
+        createdAt: now,
+        expiresAt: now,
+        status: "accepted"
+      },
+      votes: [
+        {
+          proposalId: "proposal-1",
+          voterId: VALID_AGENT_ID,
+          decision: "support",
+          confidence: 0.85,
+          reason: "Aligned with goals.",
+          createdAt: now
+        }
+      ],
+      result: {
+        proposalId: "proposal-1",
+        status: "accepted",
+        threshold: 2 / 3,
+        eligibleWeight: 300,
+        supportWeight: 200,
+        rejectWeight: 100,
+        abstainWeight: 0,
+        missingWeight: 0,
+        confidence: 0.85,
+        rationale: "Support crossed the BFT threshold.",
+        finalizedAt: now,
+        alignedAgentIds: [VALID_AGENT_ID],
+        opposingAgentIds: []
+      },
+      auditEvents: []
+    });
+    expect(result.success).toBe(true);
+  });
+
   test("BridgeAdapterManifestSchema accepts valid manifests", () => {
     const result = BridgeAdapterManifestSchema.safeParse({
       adapterId: "loopback-mailbox",
