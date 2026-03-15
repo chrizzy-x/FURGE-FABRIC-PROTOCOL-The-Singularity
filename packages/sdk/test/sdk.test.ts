@@ -104,14 +104,7 @@ describe("ProtocolClient", () => {
     expect(runs[0].status).toBe("executed");
   });
 
-  test("throws on non-existent endpoint", async () => {
-    await expect(
-      (client as unknown as { fetchJson: (path: string) => Promise<unknown> })
-        .fetchJson?.("/nonexistent") ??
-      fetch(`${(client as unknown as { baseUrl: string }).baseUrl}/nonexistent`).then((res) => {
-        if (!res.ok) throw new Error(`ProtocolClient request failed with ${res.status}`);
-        return res.json();
-      })
-    ).rejects.toThrow();
+  test("throws on non-existent proposal lookup", async () => {
+    await expect(client.getProposal("nonexistent-proposal-id")).rejects.toThrow();
   });
 });
