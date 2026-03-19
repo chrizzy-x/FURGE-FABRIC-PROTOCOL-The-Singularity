@@ -55,5 +55,8 @@ jobs:
         run: corepack enable
       - name: Install dependencies
         run: corepack pnpm install --frozen-lockfile
+      - name: Build workspace exports
+        run: corepack pnpm build
       - name: Smoke
         run: corepack pnpm smoke
+

@@ -12,6 +12,7 @@ beforeAll(async () => {
   app = await buildServer({ network });
   const address = await app.listen({ port: 0, host: "127.0.0.1" });
   client = new ProtocolClient(address);
+  await client.loginOperator("operator", "operator");
 });
 
 afterAll(async () => {
