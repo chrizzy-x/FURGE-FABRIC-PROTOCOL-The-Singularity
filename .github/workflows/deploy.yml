@@ -24,6 +24,8 @@ jobs:
   deploy_web:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://furge:furge@127.0.0.1:5432/furge
     steps:
       - uses: actions/checkout@v4
         with:
