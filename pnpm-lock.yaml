@@ -103,6 +103,8 @@ importers:
         specifier: latest
         version: 5.8.2
 
+  apps/web: {}
+
   packages/agent-node:
     dependencies:
       '@chainsafe/libp2p-gossipsub':
