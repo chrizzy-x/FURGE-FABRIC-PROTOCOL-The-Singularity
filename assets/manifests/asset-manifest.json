@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-03-19T10:24:24.730Z",
+  "publishedAt": null,
+  "assets": [
+    {
+      "id": "brand:favicon",
+      "name": "favicon",
+      "category": "brand",
+      "sourcePath": "assets/brand/favicon.svg",
+      "distPath": "assets/brand/favicon-ed1a4b60847828e6.svg",
+      "checksum": "ed1a4b60847828e6",
+      "size": 376,
+      "r2ObjectKey": "brand/favicon-ed1a4b60847828e6.svg",
+      "publicUrl": "./assets/brand/favicon-ed1a4b60847828e6.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "brand:logo-mark",
+      "name": "logo-mark",
+      "category": "brand",
+      "sourcePath": "assets/brand/logo-mark.svg",
+      "distPath": "assets/brand/logo-mark-f379654dd2239d92.svg",
+      "checksum": "f379654dd2239d92",
+      "size": 396,
+      "r2ObjectKey": "brand/logo-mark-f379654dd2239d92.svg",
+      "publicUrl": "./assets/brand/logo-mark-f379654dd2239d92.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "brand:logo-mono",
+      "name": "logo-mono",
+      "category": "brand",
+      "sourcePath": "assets/brand/logo-mono.svg",
+      "distPath": "assets/brand/logo-mono-0b5ffee79dd563cf.svg",
+      "checksum": "0b5ffee79dd563cf",
+      "size": 887,
+      "r2ObjectKey": "brand/logo-mono-0b5ffee79dd563cf.svg",
+      "publicUrl": "./assets/brand/logo-mono-0b5ffee79dd563cf.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "brand:logo-primary",
+      "name": "logo-primary",
+      "category": "brand",
+      "sourcePath": "assets/brand/logo-primary.svg",
+      "distPath": "assets/brand/logo-primary-096db0b9a6277817.svg",
+      "checksum": "096db0b9a6277817",
+      "size": 1224,
+      "r2ObjectKey": "brand/logo-primary-096db0b9a6277817.svg",
+      "publicUrl": "./assets/brand/logo-primary-096db0b9a6277817.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "brand:social-card",
+      "name": "social-card",
+      "category": "brand",
+      "sourcePath": "assets/brand/social-card.svg",
+      "distPath": "assets/brand/social-card-1add486069e7fe5b.svg",
+      "checksum": "1add486069e7fe5b",
+      "size": 1153,
+      "r2ObjectKey": "brand/social-card-1add486069e7fe5b.svg",
+      "publicUrl": "./assets/brand/social-card-1add486069e7fe5b.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "diagrams:protocol-flow",
+      "name": "protocol-flow",
+      "category": "diagrams",
+      "sourcePath": "assets/diagrams/protocol-flow.svg",
+      "distPath": "assets/diagrams/protocol-flow-fa5189ec5e14d03c.svg",
+      "checksum": "fa5189ec5e14d03c",
+      "size": 2259,
+      "r2ObjectKey": "diagrams/protocol-flow-fa5189ec5e14d03c.svg",
+      "publicUrl": "./assets/diagrams/protocol-flow-fa5189ec5e14d03c.svg",
+      "publishedAt": null
+    },
+    {
+      "id": "diagrams:runtime-topology",
+      "name": "runtime-topology",
+      "category": "diagrams",
+      "sourcePath": "assets/diagrams/runtime-topology.svg",
+      "distPath": "assets/diagrams/runtime-topology-8d7c2a373c053fe5.svg",
+      "checksum": "8d7c2a373c053fe5",
+      "size": 2421,
+      "r2ObjectKey": "diagrams/runtime-topology-8d7c2a373c053fe5.svg",
+      "publicUrl": "./assets/diagrams/runtime-topology-8d7c2a373c053fe5.svg",
+      "publishedAt": null
+    }
+  ]
+}

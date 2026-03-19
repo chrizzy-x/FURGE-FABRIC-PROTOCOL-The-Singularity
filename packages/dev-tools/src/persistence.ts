@@ -1,13 +1,17 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client/index";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { createClient, type RedisClientType } from "redis";
 import { AgentIdentity, type AgentIdentityImportInput } from "@ffp/protocol-core";
+import { DEFAULT_FURGE_POLICY } from "@ffp/tokenomics";
 import {
   AgentRecordSchema,
   AuditEventSchema,
   BlockSchema,
   BridgeExecutionReportSchema,
   ProtocolFeeEventSchema,
+  ProtocolTokenAccountSchema,
+  ProtocolTokenEventSchema,
+  ProtocolTokenSupplySchema,
   ProposalSchema,
   ReputationEventSchema,
   type AgentCapability,
@@ -17,6 +21,7 @@ import {
 
 const SNAPSHOT_CACHE_KEY = "ffp:runtime:snapshot";
 const RUNTIME_STATE_ID = "reference-local-network";
+const PROTOCOL_TOKEN_STATE_ID = "protocol-token-state";
 
 export type ProtocolRuntimeStoreOptions = {
   databaseUrl?: string;
@@ -77,6 +82,9 @@ export class ProtocolRuntimeStore {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.protocolTokenEvent.deleteMany();
+      await tx.protocolTokenAccount.deleteMany();
+      await tx.protocolTokenState.deleteMany();
       await tx.protocolFeeEvent.deleteMany();
       await tx.bridgeRun.deleteMany();
       await tx.auditEvent.deleteMany();
@@ -154,18 +162,21 @@ export class ProtocolRuntimeStore {
       return null;
     }
 
-    const [runtimeState, agents, proposals, blocks, reputationEvents, bridgeRuns, feeEvents, auditEvents] = await Promise.all([
+    const [runtimeState, tokenState, agents, proposals, blocks, reputationEvents, bridgeRuns, feeEvents, tokenAccounts, tokenEvents, auditEvents] = await Promise.all([
       this.prisma.runtimeState.findUnique({ where: { id: RUNTIME_STATE_ID } }),
+      this.prisma.protocolTokenState.findUnique({ where: { id: PROTOCOL_TOKEN_STATE_ID } }),
       this.prisma.agentRecord.findMany({ orderBy: { createdAt: "asc" } }),
       this.prisma.proposal.findMany({ orderBy: { createdAt: "asc" } }),
       this.prisma.block.findMany({ orderBy: { height: "asc" } }),
       this.prisma.reputationEvent.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       this.prisma.bridgeRun.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       this.prisma.protocolFeeEvent.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+      this.prisma.protocolTokenAccount.findMany({ orderBy: { id: "asc" } }),
+      this.prisma.protocolTokenEvent.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
       this.prisma.auditEvent.findMany({ orderBy: [{ createdAt: "asc" }, { id: "asc" }] })
     ]);
 
-    if (!runtimeState && agents.length === 0 && proposals.length === 0 && blocks.length === 0) {
+    if (!runtimeState && agents.length === 0 && proposals.length === 0 && blocks.length === 0 && tokenEvents.length === 0) {
       return null;
     }
 
@@ -233,6 +244,45 @@ export class ProtocolRuntimeStore {
           createdAt: row.createdAt.toISOString()
         })
       ),
+      tokenAccounts: tokenAccounts.map((row) =>
+        ProtocolTokenAccountSchema.parse({
+          accountId: row.id,
+          ownerId: row.ownerId,
+          ownerType: row.ownerType,
+          balance: row.balance,
+          nonce: row.nonce,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString()
+        })
+      ),
+      tokenEvents: tokenEvents.map((row) =>
+        ProtocolTokenEventSchema.parse({
+          eventId: row.id,
+          kind: row.kind,
+          tokenSymbol: row.tokenSymbol,
+          referenceId: row.referenceId,
+          blockHeight: row.blockHeight ?? undefined,
+          fromAccountId: row.fromAccountId ?? undefined,
+          toAccountId: row.toAccountId ?? undefined,
+          initiatorId: row.initiatorId,
+          amount: row.amount,
+          feeAmount: row.feeAmount,
+          nonce: row.nonce ?? undefined,
+          supplyAfter: row.supplyAfter,
+          createdAt: row.createdAt.toISOString(),
+          metadata: row.metadata
+        })
+      ),
+      tokenSupply: ProtocolTokenSupplySchema.parse({
+        tokenSymbol: tokenState?.tokenSymbol ?? DEFAULT_FURGE_POLICY.tokenSymbol,
+        maxSupply: tokenState?.maxSupply ?? DEFAULT_FURGE_POLICY.maxSupply,
+        mintedSupply: tokenState?.mintedSupply ?? 0,
+        circulatingSupply: tokenState?.circulatingSupply ?? 0,
+        remainingSupply: tokenState ? tokenState.maxSupply - tokenState.mintedSupply : DEFAULT_FURGE_POLICY.maxSupply,
+        currentReward: tokenState?.currentReward ?? DEFAULT_FURGE_POLICY.initialReward,
+        halvingInterval: tokenState?.halvingInterval ?? DEFAULT_FURGE_POLICY.halvingInterval,
+        nextHalvingAtBlock: tokenState?.nextHalvingAtBlock ?? DEFAULT_FURGE_POLICY.halvingInterval
+      }),
       auditTrail: auditEvents.map((row) =>
         AuditEventSchema.parse({
           eventId: row.id,
@@ -257,6 +307,9 @@ export class ProtocolRuntimeStore {
     const votes = snapshot.blocks.flatMap((block) => block.votes);
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.protocolTokenEvent.deleteMany();
+      await tx.protocolTokenAccount.deleteMany();
+      await tx.protocolTokenState.deleteMany();
       await tx.protocolFeeEvent.deleteMany();
       await tx.bridgeRun.deleteMany();
       await tx.auditEvent.deleteMany();
@@ -270,6 +323,19 @@ export class ProtocolRuntimeStore {
         where: { id: RUNTIME_STATE_ID },
         update: { startedAt: new Date(snapshot.startedAt) },
         create: { id: RUNTIME_STATE_ID, startedAt: new Date(snapshot.startedAt) }
+      });
+
+      await tx.protocolTokenState.create({
+        data: {
+          id: PROTOCOL_TOKEN_STATE_ID,
+          tokenSymbol: snapshot.tokenSupply.tokenSymbol,
+          maxSupply: snapshot.tokenSupply.maxSupply,
+          mintedSupply: snapshot.tokenSupply.mintedSupply,
+          circulatingSupply: snapshot.tokenSupply.circulatingSupply,
+          currentReward: snapshot.tokenSupply.currentReward,
+          halvingInterval: snapshot.tokenSupply.halvingInterval,
+          nextHalvingAtBlock: snapshot.tokenSupply.nextHalvingAtBlock
+        }
       });
 
       if (snapshot.agents.length > 0) {
@@ -376,6 +442,41 @@ export class ProtocolRuntimeStore {
         });
       }
 
+      if (snapshot.tokenAccounts.length > 0) {
+        await tx.protocolTokenAccount.createMany({
+          data: snapshot.tokenAccounts.map((account) => ({
+            id: account.accountId,
+            ownerId: account.ownerId,
+            ownerType: account.ownerType,
+            balance: account.balance,
+            nonce: account.nonce,
+            createdAt: new Date(account.createdAt),
+            updatedAt: new Date(account.updatedAt)
+          }))
+        });
+      }
+
+      if (snapshot.tokenEvents.length > 0) {
+        await tx.protocolTokenEvent.createMany({
+          data: snapshot.tokenEvents.map((event) => ({
+            id: event.eventId,
+            kind: event.kind,
+            tokenSymbol: event.tokenSymbol,
+            referenceId: event.referenceId,
+            blockHeight: event.blockHeight,
+            fromAccountId: event.fromAccountId,
+            toAccountId: event.toAccountId,
+            initiatorId: event.initiatorId,
+            amount: event.amount,
+            feeAmount: event.feeAmount,
+            nonce: event.nonce,
+            supplyAfter: event.supplyAfter,
+            createdAt: new Date(event.createdAt),
+            metadata: toInputJson(event.metadata)
+          }))
+        });
+      }
+
       if (snapshot.auditTrail.length > 0) {
         await tx.auditEvent.createMany({
           data: snapshot.auditTrail.map((event) => ({
@@ -425,3 +526,4 @@ export function createProtocolRuntimeStoreFromEnv(env: NodeJS.ProcessEnv = proce
     redisUrl: env.REDIS_URL
   });
 }
+

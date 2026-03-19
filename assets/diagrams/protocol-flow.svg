@@ -1,0 +1,25 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="32" fill="#0F1A20"/>
+  <text x="60" y="72" fill="#F2EEE6" font-size="34" font-family="Arial">Protocol Data Flow</text>
+  <rect x="70" y="170" width="180" height="100" rx="20" fill="#F2EEE6"/>
+  <text x="106" y="228" fill="#0F1A20" font-size="28" font-family="Arial">Operator</text>
+  <rect x="310" y="170" width="200" height="100" rx="20" fill="#C46A2D"/>
+  <text x="360" y="228" fill="#0F1A20" font-size="28" font-family="Arial">API</text>
+  <rect x="570" y="170" width="220" height="100" rx="20" fill="#F2EEE6"/>
+  <text x="606" y="228" fill="#0F1A20" font-size="28" font-family="Arial">Consensus</text>
+  <rect x="850" y="170" width="250" height="100" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="904" y="228" fill="#F2EEE6" font-size="28" font-family="Arial">Immutable Block</text>
+  <rect x="160" y="450" width="240" height="110" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="214" y="514" fill="#F2EEE6" font-size="28" font-family="Arial">$FURGE Ledger</text>
+  <rect x="470" y="450" width="240" height="110" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="526" y="514" fill="#F2EEE6" font-size="28" font-family="Arial">Audit Trail</text>
+  <rect x="780" y="450" width="260" height="110" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="828" y="514" fill="#F2EEE6" font-size="28" font-family="Arial">Explorer Views</text>
+  <path d="M250 220H310" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M510 220H570" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M790 220H850" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M380 270L274 450" stroke="#C46A2D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M690 270L590 450" stroke="#C46A2D" stroke-width="8" stroke-linecap="round"/>
+  <path d="M970 270L912 450" stroke="#C46A2D" stroke-width="8" stroke-linecap="round"/>
+  <text x="70" y="644" fill="#9FB5BE" font-size="22" font-family="Arial">Every accepted write produces an immutable block, token events, and explorer-visible audit state.</text>
+</svg>

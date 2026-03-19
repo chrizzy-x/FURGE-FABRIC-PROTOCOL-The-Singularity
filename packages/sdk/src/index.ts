@@ -1,21 +1,50 @@
 import {
   BlockSchema,
   BridgeExecutionReportSchema,
+  OperatorLoginResponseSchema,
+  OperatorSessionSchema,
   ProtocolFeeEventSchema,
-  ProposalSchema,
+  ProtocolTokenAccountSchema,
+  ProtocolTokenEventSchema,
+  ProtocolTokenSupplySchema,
   type Block,
   type BridgeExecutionResolution,
   type BridgeRequest,
+  type OperatorLoginResponse,
+  type OperatorSession,
   type ProtocolSnapshot,
   type ProposalResolution,
-  type ProposalSubmission
+  type ProposalSubmission,
+  type ProtocolTokenTransferRequest,
+  type ProtocolTokenTransferResolution
 } from "@ffp/shared-types";
 
 export class ProtocolClient {
+  private operatorToken?: string;
+
   constructor(private readonly baseUrl: string) {}
 
-  async getHealth(): Promise<{ ok: boolean; service: string }> {
-    return this.fetchJson<{ ok: boolean; service: string }>("/health");
+  setOperatorToken(token?: string): void {
+    this.operatorToken = token;
+  }
+
+  async loginOperator(username: string, password: string): Promise<OperatorLoginResponse> {
+    const response = await this.fetchJson<unknown>("/auth/operator/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password })
+    });
+    const parsed = OperatorLoginResponseSchema.parse(response);
+    this.operatorToken = parsed.token;
+    return parsed;
+  }
+
+  async getOperatorSession(): Promise<OperatorSession> {
+    const response = await this.fetchJson<unknown>("/auth/operator/me", undefined, true);
+    return OperatorSessionSchema.parse(response);
+  }
+
+  async getHealth(): Promise<{ ok: boolean; service: string; persistence: string }> {
+    return this.fetchJson<{ ok: boolean; service: string; persistence: string }>("/health");
   }
 
   async getSnapshot(): Promise<ProtocolSnapshot> {
@@ -28,8 +57,7 @@ export class ProtocolClient {
   }
 
   async listProposals(): Promise<ProtocolSnapshot["proposals"]> {
-    const proposals = await this.fetchJson<unknown[]>("/proposals");
-    return proposals.map((proposal) => ProposalSchema.parse(proposal));
+    return this.fetchJson<ProtocolSnapshot["proposals"]>("/proposals");
   }
 
   async getProposal(proposalId: string): Promise<ProposalResolution> {
@@ -37,10 +65,14 @@ export class ProtocolClient {
   }
 
   async submitProposal(input: ProposalSubmission): Promise<ProposalResolution> {
-    return this.fetchJson<ProposalResolution>("/proposals", {
-      method: "POST",
-      body: JSON.stringify(input)
-    });
+    return this.fetchJson<ProposalResolution>(
+      "/proposals",
+      {
+        method: "POST",
+        body: JSON.stringify(input)
+      },
+      true
+    );
   }
 
   async listBlocks(): Promise<Block[]> {
@@ -53,10 +85,14 @@ export class ProtocolClient {
   }
 
   async executeBridge(request: Omit<BridgeRequest, "requestId" | "createdAt">): Promise<BridgeExecutionResolution> {
-    return this.fetchJson<BridgeExecutionResolution>("/bridges/execute", {
-      method: "POST",
-      body: JSON.stringify(request)
-    });
+    return this.fetchJson<BridgeExecutionResolution>(
+      "/bridges/execute",
+      {
+        method: "POST",
+        body: JSON.stringify(request)
+      },
+      true
+    );
   }
 
   async listFees() {
@@ -64,13 +100,51 @@ export class ProtocolClient {
     return fees.map((event) => ProtocolFeeEventSchema.parse(event));
   }
 
-  private async fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  async getTokenSupply() {
+    const supply = await this.fetchJson<unknown>("/token/supply");
+    return ProtocolTokenSupplySchema.parse(supply);
+  }
+
+  async listTokenAccounts() {
+    const accounts = await this.fetchJson<unknown[]>("/token/accounts");
+    return accounts.map((account) => ProtocolTokenAccountSchema.parse(account));
+  }
+
+  async getTokenAccount(ownerId: string) {
+    const account = await this.fetchJson<unknown>(`/token/accounts/${ownerId}`);
+    return ProtocolTokenAccountSchema.parse(account);
+  }
+
+  async listTokenEvents() {
+    const events = await this.fetchJson<unknown[]>("/token/events");
+    return events.map((event) => ProtocolTokenEventSchema.parse(event));
+  }
+
+  async transferTokens(request: ProtocolTokenTransferRequest): Promise<ProtocolTokenTransferResolution> {
+    return this.fetchJson<ProtocolTokenTransferResolution>(
+      "/token/transfers",
+      {
+        method: "POST",
+        body: JSON.stringify(request)
+      },
+      true
+    );
+  }
+
+  private async fetchJson<T>(path: string, init?: RequestInit, requiresAuth = false): Promise<T> {
+    const headers = new Headers(init?.headers ?? {});
+    headers.set("content-type", "application/json");
+
+    if (requiresAuth) {
+      if (!this.operatorToken) {
+        throw new Error(`ProtocolClient request for ${path} requires an operator token`);
+      }
+      headers.set("authorization", `Bearer ${this.operatorToken}`);
+    }
+
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
-      headers: {
-        "content-type": "application/json",
-        ...(init?.headers ?? {})
-      }
+      headers
     });
 
     if (!response.ok) {

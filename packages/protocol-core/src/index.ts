@@ -523,6 +523,12 @@ export class ProtocolCore {
   listAuditTrail(referenceId?: string): AuditEvent[] {
     return referenceId ? this.auditTrail.filter((event) => event.referenceId === referenceId) : [...this.auditTrail];
   }
+
+  appendAuditEvent(event: AuditEvent): AuditEvent {
+    const parsed = AuditEventSchema.parse(event);
+    this.auditTrail.push(parsed);
+    return parsed;
+  }
 }
 
 export function createProposal(input: {
@@ -590,3 +596,4 @@ export function createTamperedBlock(block: Block): Block {
     hash: hashValue({ tampered: stableSerialize(block) })
   };
 }
+

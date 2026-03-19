@@ -28,6 +28,9 @@ export type VoteDecision = (typeof VOTE_DECISIONS)[number];
 export const BRIDGE_DIRECTIONS = ["ingress", "egress", "bidirectional"] as const;
 export type BridgeDirection = (typeof BRIDGE_DIRECTIONS)[number];
 
+export const TOKEN_ACCOUNT_OWNER_TYPES = ["agent", "system"] as const;
+export type TokenAccountOwnerType = (typeof TOKEN_ACCOUNT_OWNER_TYPES)[number];
+
 const recordSchema = z.record(z.string(), z.unknown());
 
 export const AgentRecordSchema = z.object({
@@ -176,6 +179,102 @@ export const ProtocolFeeEventSchema = z.object({
 });
 export type ProtocolFeeEvent = z.infer<typeof ProtocolFeeEventSchema>;
 
+export const ProtocolTokenPolicySchema = z.object({
+  tokenSymbol: z.literal(PROTOCOL_TOKEN_SYMBOL),
+  maxSupply: z.number().positive(),
+  genesisTreasuryAllocation: z.number().nonnegative(),
+  genesisAgentGrant: z.number().nonnegative(),
+  initialReward: z.number().nonnegative(),
+  halvingInterval: z.number().int().positive(),
+  baseTransferFee: z.number().nonnegative(),
+  transferFeeRate: z.number().nonnegative(),
+  epochFeeStep: z.number().nonnegative()
+});
+export type ProtocolTokenPolicy = z.infer<typeof ProtocolTokenPolicySchema>;
+
+export const ProtocolTokenAccountSchema = z.object({
+  accountId: z.string().min(1),
+  ownerId: z.string().min(1),
+  ownerType: z.enum(TOKEN_ACCOUNT_OWNER_TYPES),
+  balance: z.number().nonnegative(),
+  nonce: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+export type ProtocolTokenAccount = z.infer<typeof ProtocolTokenAccountSchema>;
+
+export const ProtocolTokenEventSchema = z.object({
+  eventId: z.string().min(1),
+  kind: z.enum(["genesis", "reward", "transfer", "fee_settlement"]),
+  tokenSymbol: z.literal(PROTOCOL_TOKEN_SYMBOL),
+  referenceId: z.string().min(1),
+  blockHeight: z.number().int().nonnegative().optional(),
+  fromAccountId: z.string().min(1).optional(),
+  toAccountId: z.string().min(1).optional(),
+  initiatorId: z.string().min(1),
+  amount: z.number().nonnegative(),
+  feeAmount: z.number().nonnegative().default(0),
+  nonce: z.number().int().nonnegative().optional(),
+  supplyAfter: z.number().nonnegative(),
+  createdAt: z.string().datetime(),
+  metadata: recordSchema.default({})
+});
+export type ProtocolTokenEvent = z.infer<typeof ProtocolTokenEventSchema>;
+
+export const ProtocolTokenSupplySchema = z.object({
+  tokenSymbol: z.literal(PROTOCOL_TOKEN_SYMBOL),
+  maxSupply: z.number().positive(),
+  mintedSupply: z.number().nonnegative(),
+  circulatingSupply: z.number().nonnegative(),
+  remainingSupply: z.number().nonnegative(),
+  currentReward: z.number().nonnegative(),
+  halvingInterval: z.number().int().positive(),
+  nextHalvingAtBlock: z.number().int().positive()
+});
+export type ProtocolTokenSupply = z.infer<typeof ProtocolTokenSupplySchema>;
+
+export const ProtocolTokenTransferRequestSchema = z.object({
+  fromAgentId: z.string().min(64).max(64),
+  toAgentId: z.string().min(64).max(64),
+  amount: z.number().positive(),
+  nonce: z.number().int().nonnegative(),
+  memo: z.string().min(3).max(280).optional()
+});
+export type ProtocolTokenTransferRequest = z.infer<typeof ProtocolTokenTransferRequestSchema>;
+
+export const ProtocolTokenTransferReceiptSchema = z.object({
+  proposalId: z.string().min(1),
+  blockId: z.string().min(1),
+  transferEvent: ProtocolTokenEventSchema,
+  feeEvent: ProtocolTokenEventSchema,
+  feeRecord: ProtocolFeeEventSchema,
+  senderAccount: ProtocolTokenAccountSchema,
+  recipientAccount: ProtocolTokenAccountSchema,
+  validatorAccount: ProtocolTokenAccountSchema,
+  supply: ProtocolTokenSupplySchema
+});
+export type ProtocolTokenTransferReceipt = z.infer<typeof ProtocolTokenTransferReceiptSchema>;
+
+export const OperatorLoginRequestSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1)
+});
+export type OperatorLoginRequest = z.infer<typeof OperatorLoginRequestSchema>;
+
+export const OperatorSessionSchema = z.object({
+  username: z.string().min(1),
+  role: z.literal("operator"),
+  issuedAt: z.string().datetime(),
+  expiresAt: z.string().datetime()
+});
+export type OperatorSession = z.infer<typeof OperatorSessionSchema>;
+
+export const OperatorLoginResponseSchema = z.object({
+  token: z.string().min(1),
+  session: OperatorSessionSchema
+});
+export type OperatorLoginResponse = z.infer<typeof OperatorLoginResponseSchema>;
+
 export const SignedEnvelopeSchema = z.object({
   kind: z.enum(MESSAGE_KINDS),
   signerId: z.string().min(64).max(64),
@@ -203,6 +302,9 @@ export type ProtocolSnapshot = {
   reputationEvents: ReputationEvent[];
   bridgeReports: BridgeExecutionReport[];
   feeEvents: ProtocolFeeEvent[];
+  tokenAccounts: ProtocolTokenAccount[];
+  tokenEvents: ProtocolTokenEvent[];
+  tokenSupply: ProtocolTokenSupply;
   auditTrail: AuditEvent[];
   peers: Array<{ agentId: string; peerId: string; listenAddresses: string[] }>;
 };
@@ -218,6 +320,11 @@ export type BridgeExecutionResolution = {
   proposalResolution: ProposalResolution;
   bridgeReport: BridgeExecutionReport;
   feeEvent: ProtocolFeeEvent;
+};
+
+export type ProtocolTokenTransferResolution = {
+  proposalResolution: ProposalResolution;
+  receipt: ProtocolTokenTransferReceipt;
 };
 
 export function nowIso(): string {
@@ -248,6 +355,10 @@ export function makeDeterministicId(prefix: string, value: unknown): string {
 
 export function clampReputation(value: number): number {
   return Math.min(MAX_REPUTATION, Math.max(MIN_REPUTATION, Math.round(value * 100) / 100));
+}
+
+export function roundTokenAmount(value: number): number {
+  return Number(value.toFixed(6));
 }
 
 export function assertConsensusResult(progress: ConsensusProgress): asserts progress is ConsensusResult {

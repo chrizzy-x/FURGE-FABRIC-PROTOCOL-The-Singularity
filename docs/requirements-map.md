@@ -1,14 +1,12 @@
 # Requirements Map
 
-This map ties the current implementation scope to the updated source documents.
-
-| Protocol Area | Source Documents | Required Behavior |
+| Requirement Area | Source Document(s) | Current Repo Implementation |
 | --- | --- | --- |
-| Agent identity | Executive Summary, Technical Specification | Agents self-generate RSA 2048 keypairs, derive IDs from public keys, and sign protocol messages |
-| BFT consensus | Executive Summary, Technical Specification | Reputation-weighted voting with a 2/3 majority threshold and tolerance for up to one third faulty or malicious agents |
-| Immutable chains | Technical Specification | Proposals, votes, and consensus results are stored in hash-linked blocks with tamper detection |
-| Reputation system | Technical Specification, Real-World Use Cases | Agents start at a baseline score and gain or lose reputation based on alignment with consensus outcomes |
-| P2P networking | Technical Specification | Direct peer discovery and protocol messaging without a central coordinator |
-| Bridge architecture | Technical Specification, Economic Model | Bridge capabilities are registered and audited; external payloads are validated before trusted use |
-| Protocol token scope | Executive Summary, Technical Specification, Economic Model | `$FURGE` is used only for cross-chain coordination and bridge-level protocol fees |
-| Layer boundary | Executive Summary, Technical Specification, Real-World Use Cases | No Layer 1 chain logic, no Layer 2 app logic, and no UI surfaces in active repo scope |
+| Layer boundary | Executive Summary, Technical Specification, Real-World Use Cases | No Layer 1 chain logic, no Layer 2 business app logic, and no metaverse chain work in active repo scope |
+| Agent coordination | Executive Summary, Technical Specification | Implemented through signed identities, proposals, votes, peer networking, and reputation-weighted BFT consensus |
+| Immutable record | Technical Specification | Implemented through hash-linked finalized blocks and audited protocol events |
+| Bridge integration | Technical Specification, Real-World Use Cases | Implemented through bridge adapter manifests, validation, execution reports, and fee journaling |
+| Durable runtime | Technical Specification | Implemented with Prisma-backed PostgreSQL persistence and Redis snapshot caching |
+| Protocol-native token | Economic Model / Tokenomics | `$FURGE` implemented as the protocol-native fixed-cap asset with issuance, fees, transfers, supply state, and invariants |
+| Operational surfaces | Executive Summary, Technical Specification | Implemented through `apps/api` plus `apps/web` for public explorer, protected operator console, docs, and branded release media |
+| Dedicated cloud environment | Updated scope direction | Render, Cloudflare Pages, and Cloudflare R2 are the intended isolated production targets |

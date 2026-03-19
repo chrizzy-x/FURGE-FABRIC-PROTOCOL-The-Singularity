@@ -126,7 +126,11 @@ export class BridgeRegistry {
   }
 
   importReport(report: BridgeExecutionReport): void {
-    this.reports.push(BridgeExecutionReportSchema.parse(report));
+    const parsed = BridgeExecutionReportSchema.parse(report);
+    if (this.reports.some((entry) => entry.runId === parsed.runId)) {
+      return;
+    }
+    this.reports.push(parsed);
   }
 }
 
@@ -186,3 +190,4 @@ export class LoopbackBridgeAdapter implements BridgeAdapter {
     };
   }
 }
+

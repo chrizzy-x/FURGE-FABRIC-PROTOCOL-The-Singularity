@@ -203,6 +203,7 @@ export class AgentNode extends EventEmitter {
   }
 
   getSnapshot(allPeers: Array<{ agentId: string; peerId: string; listenAddresses: string[] }>): ProtocolSnapshot {
+    const tokenState = this.feeLedger.exportState();
     return {
       startedAt: nowIso(),
       agents: this.core.listAgents(),
@@ -210,7 +211,10 @@ export class AgentNode extends EventEmitter {
       blocks: this.core.immutableChain.listBlocks(),
       reputationEvents: this.core.reputationLedger.listEvents(),
       bridgeReports: this.bridgeArtifacts.length > 0 ? [...this.bridgeArtifacts] : this.bridgeRegistry.listReports(),
-      feeEvents: this.feeLedger.listEvents(),
+      feeEvents: tokenState.feeEvents,
+      tokenAccounts: tokenState.accounts,
+      tokenEvents: tokenState.tokenEvents,
+      tokenSupply: tokenState.supply,
       auditTrail: this.core.listAuditTrail(),
       peers: allPeers
     };
@@ -406,3 +410,4 @@ function normalizeTag(tag: string): AgentRecord["capabilities"][number] {
   }
   return "consensus";
 }
+

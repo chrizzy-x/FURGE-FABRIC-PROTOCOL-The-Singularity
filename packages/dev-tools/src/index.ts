@@ -3,17 +3,23 @@ import { LoopbackBridgeAdapter } from "@ffp/bridges";
 import { ConsensusEngine } from "@ffp/consensus";
 import { AgentIdentity, createProposal } from "@ffp/protocol-core";
 import {
+  AuditEventSchema,
   assertConsensusResult,
   nowIso,
   type AgentCapability,
-  type BridgeExecutionResolution,
   type BridgeExecutionReport,
   type BridgeRequest,
+  type BridgeExecutionResolution,
   type ModelFamily,
   type ProposalResolution,
   type ProposalSubmission,
   type ProtocolFeeEvent,
   type ProtocolSnapshot,
+  type ProtocolTokenAccount,
+  type ProtocolTokenEvent,
+  type ProtocolTokenSupply,
+  type ProtocolTokenTransferRequest,
+  type ProtocolTokenTransferResolution,
   type ReputationEvent,
   type Vote
 } from "@ffp/shared-types";
@@ -78,6 +84,7 @@ export class LocalNetwork {
 
     await new Promise((resolve) => setTimeout(resolve, 500));
     await this.restoreRuntimeState();
+    this.ensureGenesisTokenState();
     this.started = true;
     await this.persistRuntimeState();
   }
@@ -154,6 +161,8 @@ export class LocalNetwork {
       node.core.applyFinalizationBroadcast(broadcast);
     }
 
+    this.settleValidationReward(broadcast.block);
+
     const block = coordinator.core.immutableChain.getByProposal(proposal.proposalId);
     if (!block) {
       throw new Error(`Proposal ${proposal.proposalId} did not produce a finalized block`);
@@ -181,9 +190,20 @@ export class LocalNetwork {
 
     if (proposalResolution.result.status !== "accepted") {
       proposalResolution = this.forceAcceptedBridgeProposal(request);
+      this.settleValidationReward(proposalResolution.block);
     }
 
     const { report, feeEvent } = await this.getCoordinator().executeBridge(request, proposalResolution.result);
+    for (const node of this.nodes.slice(1)) {
+      node.bridgeRegistry.importReport(report);
+    }
+    this.syncTokenStateFromCoordinator();
+    this.appendNetworkAuditEvent("token.fee.bridge", report.runId, {
+      requestId: report.requestId,
+      amount: feeEvent.amount,
+      payerId: feeEvent.payerId,
+      payeeId: feeEvent.payeeId ?? null
+    }, feeEvent.createdAt, feeEvent.payerId);
     await this.persistRuntimeState();
     return {
       proposalResolution,
@@ -192,10 +212,72 @@ export class LocalNetwork {
     };
   }
 
-  getSnapshot(): ProtocolSnapshot {
+  async transferTokens(input: ProtocolTokenTransferRequest): Promise<ProtocolTokenTransferResolution> {
+    const transferRequest = input;
+    let proposalResolution = await this.submitProposal({
+      subject: `Protocol token transfer :: ${transferRequest.fromAgentId.slice(0, 12)} -> ${transferRequest.toAgentId.slice(0, 12)}`,
+      summary: `Settle a protocol-native ${this.getTokenSupply().tokenSymbol} transfer within the Layer 0 runtime.`,
+      payload: {
+        fromAgentId: transferRequest.fromAgentId,
+        toAgentId: transferRequest.toAgentId,
+        amount: transferRequest.amount,
+        nonce: transferRequest.nonce,
+        memo: transferRequest.memo ?? null
+      },
+      tags: ["coordination", "audit", "consensus", "network"],
+      expiresInMs: 7_000
+    });
+
+    if (proposalResolution.result.status !== "accepted") {
+      proposalResolution = this.forceAcceptedTokenTransferProposal(transferRequest);
+      this.settleValidationReward(proposalResolution.block);
+    }
+
+    const validatorId = this.getCoordinator().identity.agentId;
+    const receipt = this.getCoordinator().feeLedger.recordTransfer({
+      fromAgentId: transferRequest.fromAgentId,
+      toAgentId: transferRequest.toAgentId,
+      amount: transferRequest.amount,
+      nonce: transferRequest.nonce,
+      referenceId: proposalResolution.block.blockId,
+      proposalId: proposalResolution.proposal.proposalId,
+      validatorId,
+      blockHeight: proposalResolution.block.height,
+      createdAt: proposalResolution.block.createdAt,
+      memo: transferRequest.memo
+    });
+
+    this.syncTokenStateFromCoordinator();
+    this.appendNetworkAuditEvent("token.transfer.settled", proposalResolution.block.blockId, {
+      fromAgentId: transferRequest.fromAgentId,
+      toAgentId: transferRequest.toAgentId,
+      amount: transferRequest.amount,
+      nonce: transferRequest.nonce,
+      feeAmount: receipt.feeRecord.amount,
+      validatorId
+    }, proposalResolution.block.createdAt, transferRequest.fromAgentId);
+    await this.persistRuntimeState();
+
     return {
-      ...this.getCoordinator().getSnapshot(this.nodes.map((node) => node.getPeerMetadata())),
-      startedAt: this.startedAt
+      proposalResolution,
+      receipt: {
+        ...receipt,
+        proposalId: proposalResolution.proposal.proposalId,
+        blockId: proposalResolution.block.blockId
+      }
+    };
+  }
+
+  getSnapshot(): ProtocolSnapshot {
+    const coordinator = this.getCoordinator();
+    const tokenState = coordinator.feeLedger.exportState();
+
+    return {
+      ...coordinator.getSnapshot(this.nodes.map((node) => node.getPeerMetadata())),
+      startedAt: this.startedAt,
+      tokenAccounts: tokenState.accounts,
+      tokenEvents: tokenState.tokenEvents,
+      tokenSupply: tokenState.supply
     };
   }
 
@@ -205,6 +287,18 @@ export class LocalNetwork {
 
   listFees(): ProtocolFeeEvent[] {
     return this.getSnapshot().feeEvents;
+  }
+
+  listTokenAccounts(): ProtocolTokenAccount[] {
+    return this.getSnapshot().tokenAccounts;
+  }
+
+  listTokenEvents(): ProtocolTokenEvent[] {
+    return this.getSnapshot().tokenEvents;
+  }
+
+  getTokenSupply(): ProtocolTokenSupply {
+    return this.getSnapshot().tokenSupply;
   }
 
   getStartedAt(): string {
@@ -261,8 +355,17 @@ export class LocalNetwork {
       node.bridgeRegistry.importReport(report);
     }
 
-    for (const feeEvent of snapshot.feeEvents) {
-      node.feeLedger.importEvent(feeEvent);
+    node.feeLedger.importState({
+      accounts: snapshot.tokenAccounts,
+      tokenEvents: snapshot.tokenEvents,
+      feeEvents: snapshot.feeEvents,
+      supply: snapshot.tokenSupply
+    });
+
+    for (const auditEvent of snapshot.auditTrail) {
+      if (!node.core.listAuditTrail(auditEvent.referenceId).some((entry) => entry.eventId === auditEvent.eventId)) {
+        node.core.appendAuditEvent(auditEvent);
+      }
     }
   }
 
@@ -270,6 +373,68 @@ export class LocalNetwork {
     return events.filter((event) => event.proposalId === proposalId);
   }
 
+  private forceAcceptedTokenTransferProposal(request: ProtocolTokenTransferRequest): ProposalResolution {
+    const coordinator = this.getCoordinator();
+    const proposal = createProposal({
+      proposerId: coordinator.identity.agentId,
+      subject: `Protocol token transfer :: ${request.fromAgentId.slice(0, 12)} -> ${request.toAgentId.slice(0, 12)} :: approved`,
+      summary: `Deterministic approval lane for a protocol-native ${this.getTokenSupply().tokenSymbol} transfer.`,
+      payload: {
+        fromAgentId: request.fromAgentId,
+        toAgentId: request.toAgentId,
+        amount: request.amount,
+        nonce: request.nonce,
+        memo: request.memo ?? null
+      },
+      tags: ["coordination", "audit", "consensus", "network", "observability"],
+      expiresInMs: 7_000
+    });
+
+    for (const node of this.nodes) {
+      if (!node.core.hasProposal(proposal.proposalId)) {
+        node.core.submitProposal(proposal);
+      }
+    }
+
+    const votes: Vote[] = this.nodes.map((node) => ({
+      proposalId: proposal.proposalId,
+      voterId: node.identity.agentId,
+      decision: "support",
+      confidence: 0.91,
+      reason: `${node.core.getAgent(node.identity.agentId).label} approved the deterministic protocol token transfer lane.`,
+      createdAt: nowIso()
+    }));
+
+    for (const node of this.nodes) {
+      for (const vote of votes) {
+        node.core.recordVote(vote);
+      }
+    }
+
+    const progress = new ConsensusEngine().evaluateProposal(
+      proposal,
+      votes,
+      this.nodes.map((node) => node.identity.agentId),
+      coordinator.core.reputationLedger
+    );
+    assertConsensusResult(progress);
+    const broadcast = coordinator.core.finalizeProposal(progress);
+    for (const node of this.nodes.slice(1)) {
+      node.core.applyFinalizationBroadcast(broadcast);
+    }
+
+    const block = coordinator.core.immutableChain.getByProposal(proposal.proposalId);
+    if (!block) {
+      throw new Error(`Token transfer approval proposal ${proposal.proposalId} did not produce a finalized block`);
+    }
+
+    return {
+      proposal: coordinator.core.getProposal(proposal.proposalId),
+      result: progress,
+      votes,
+      block
+    };
+  }
   private forceAcceptedBridgeProposal(request: Omit<BridgeRequest, "requestId" | "createdAt">): ProposalResolution {
     const coordinator = this.getCoordinator();
     const proposal = createProposal({
@@ -327,6 +492,63 @@ export class LocalNetwork {
     };
   }
 
+  private ensureGenesisTokenState(): void {
+    const coordinator = this.getCoordinator();
+    if (coordinator.feeLedger.listTokenEvents().length > 0) {
+      return;
+    }
+
+    coordinator.feeLedger.seedGenesis(this.nodes.map((node) => node.identity.agentId), this.startedAt);
+    this.syncTokenStateFromCoordinator();
+    this.appendNetworkAuditEvent("token.genesis.seeded", "token-genesis", {
+      maxSupply: coordinator.feeLedger.getPolicy().maxSupply,
+      genesisTreasuryAllocation: coordinator.feeLedger.getPolicy().genesisTreasuryAllocation,
+      genesisAgentGrant: coordinator.feeLedger.getPolicy().genesisAgentGrant
+    }, this.startedAt, coordinator.identity.agentId);
+  }
+
+  private settleValidationReward(block: ProposalResolution["block"]): void {
+    for (const node of this.nodes) {
+      node.feeLedger.recordValidationReward({
+        validatorId: this.getCoordinator().identity.agentId,
+        blockHeight: block.height,
+        referenceId: block.blockId,
+        createdAt: block.createdAt
+      });
+    }
+
+    this.appendNetworkAuditEvent("token.reward.issued", block.blockId, {
+      blockHeight: block.height,
+      validatorId: this.getCoordinator().identity.agentId,
+      reward: this.getCoordinator().feeLedger.listTokenEvents().find((event) => event.kind === "reward" && event.referenceId === block.blockId)?.amount ?? 0
+    }, block.createdAt, this.getCoordinator().identity.agentId);
+    this.syncTokenStateFromCoordinator();
+  }
+
+  private syncTokenStateFromCoordinator(): void {
+    const state = this.getCoordinator().feeLedger.exportState();
+    for (const node of this.nodes.slice(1)) {
+      node.feeLedger.importState(state);
+    }
+  }
+
+  private appendNetworkAuditEvent(type: string, referenceId: string, payload: Record<string, unknown>, createdAt: string, actorId: string): void {
+    const event = AuditEventSchema.parse({
+      eventId: `${type}:${referenceId}`,
+      type,
+      actorId,
+      referenceId,
+      createdAt,
+      payload
+    });
+
+    for (const node of this.nodes) {
+      if (!node.core.listAuditTrail(referenceId).some((entry) => entry.eventId === event.eventId)) {
+        node.core.appendAuditEvent(event);
+      }
+    }
+  }
+
   private async persistRuntimeState(): Promise<void> {
     if (!this.persistence?.enabled || this.nodes.length === 0) {
       return;
@@ -341,6 +563,9 @@ export class LocalNetwork {
       reputationEvents: snapshot.reputationEvents,
       bridgeReports: snapshot.bridgeReports,
       feeEvents: snapshot.feeEvents,
+      tokenAccounts: snapshot.tokenAccounts,
+      tokenEvents: snapshot.tokenEvents,
+      tokenSupply: snapshot.tokenSupply,
       auditTrail: snapshot.auditTrail
     });
   }

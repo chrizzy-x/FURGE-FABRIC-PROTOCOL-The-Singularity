@@ -1,0 +1,61 @@
+name: deploy
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    branches: ["main"]
+    types: [completed]
+
+jobs:
+  deploy_api:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Missing RENDER_DEPLOY_HOOK_URL" >&2
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$RENDER_DEPLOY_HOOK_URL"
+
+  deploy_web:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+      - name: Build web assets
+        env:
+          FFP_PUBLIC_API_BASE_URL: ${{ secrets.FFP_PUBLIC_API_BASE_URL }}
+          FFP_PUBLIC_ASSET_BASE_URL: ${{ secrets.CLOUDFLARE_R2_PUBLIC_BASE_URL }}
+        run: corepack pnpm --filter @ffp/web run build
+      - name: Publish assets to Cloudflare R2
+        env:
+          CLOUDFLARE_R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_BUCKET: ${{ secrets.CLOUDFLARE_R2_BUCKET }}
+          CLOUDFLARE_R2_PUBLIC_BASE_URL: ${{ secrets.CLOUDFLARE_R2_PUBLIC_BASE_URL }}
+        run: node ./scripts/publish-assets.mjs
+      - name: Deploy Cloudflare Pages site
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/web/dist --project-name furge-fabric-protocol-the-singularity
+      - name: Verify production endpoints
+        env:
+          FFP_PRODUCTION_API_BASE_URL: ${{ secrets.FFP_PRODUCTION_API_BASE_URL }}
+          FFP_PRODUCTION_WEB_URL: ${{ secrets.FFP_PRODUCTION_WEB_URL }}
+        run: node ./scripts/verify-production.mjs

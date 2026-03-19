@@ -1,0 +1,12 @@
+{
+  "name": "@ffp/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node ../../scripts/build-web.mjs && node ../../node_modules/typescript/lib/tsc.js -p tsconfig.json",
+    "lint": "node ../../node_modules/eslint/bin/eslint.js src test --ext .ts --no-error-on-unmatched-pattern",
+    "typecheck": "node ../../node_modules/typescript/lib/tsc.js -p tsconfig.json",
+    "test": "node ../../node_modules/vitest/vitest.mjs run --config ../../vitest.config.ts test"
+  }
+}

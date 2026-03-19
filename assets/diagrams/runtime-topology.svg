@@ -1,0 +1,26 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="32" fill="#0F1A20"/>
+  <text x="60" y="72" fill="#F2EEE6" font-size="34" font-family="Arial">FURGE Layer 0 Runtime Topology</text>
+  <rect x="70" y="118" width="250" height="180" rx="24" fill="#F2EEE6"/>
+  <text x="100" y="162" fill="#0F1A20" font-size="28" font-family="Arial">Public Web</text>
+  <text x="100" y="202" fill="#0F1A20" font-size="20" font-family="Arial">Brand / Docs / Explorer / Operator</text>
+  <rect x="470" y="108" width="260" height="200" rx="24" fill="#C46A2D"/>
+  <text x="500" y="158" fill="#0F1A20" font-size="30" font-family="Arial">API Runtime</text>
+  <text x="500" y="198" fill="#0F1A20" font-size="20" font-family="Arial">Fastify + Auth + LocalNetwork</text>
+  <rect x="850" y="100" width="270" height="150" rx="24" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="886" y="154" fill="#F2EEE6" font-size="28" font-family="Arial">Render</text>
+  <text x="886" y="192" fill="#9FB5BE" font-size="20" font-family="Arial">Always-on API service</text>
+  <rect x="430" y="406" width="180" height="132" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="468" y="462" fill="#F2EEE6" font-size="28" font-family="Arial">Postgres</text>
+  <rect x="646" y="406" width="180" height="132" rx="20" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="705" y="462" fill="#F2EEE6" font-size="28" font-family="Arial">Redis</text>
+  <rect x="910" y="384" width="220" height="160" rx="24" fill="#16252B" stroke="#9FB5BE" stroke-width="3"/>
+  <text x="948" y="440" fill="#F2EEE6" font-size="28" font-family="Arial">Cloudflare</text>
+  <text x="948" y="478" fill="#9FB5BE" font-size="20" font-family="Arial">Pages + R2</text>
+  <path d="M320 208H470" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M730 208H850" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M544 308V406" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M700 308V406" stroke="#F2EEE6" stroke-width="8" stroke-linecap="round"/>
+  <path d="M790 260L960 384" stroke="#C46A2D" stroke-width="8" stroke-linecap="round"/>
+  <text x="70" y="646" fill="#9FB5BE" font-size="22" font-family="Arial">Five protocol nodes, consensus, token settlement, and audit history live behind the API surface.</text>
+</svg>

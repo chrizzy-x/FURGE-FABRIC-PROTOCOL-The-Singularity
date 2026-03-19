@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: furge-fabric-protocol-api
+    runtime: node
+    plan: starter
+    rootDir: .
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm db:generate && corepack pnpm build
+    startCommand: corepack pnpm --filter @ffp/api run start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.0.0
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: info
+      - key: FFP_AUTO_BOOTSTRAP
+        value: true
+      - key: ENABLE_PRODUCTION_RESET
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: furge-fabric-protocol-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: furge-fabric-protocol-redis
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://furge-fabric-protocol-the-singularity.pages.dev
+      - key: OPERATOR_USERNAME
+        sync: false
+      - key: OPERATOR_PASSWORD_HASH
+        sync: false
+      - key: OPERATOR_TOKEN_SECRET
+        sync: false
+
+  - type: redis
+    name: furge-fabric-protocol-redis
+    plan: starter
+    ipAllowList: []
+
+databases:
+  - name: furge-fabric-protocol-postgres
+    databaseName: furge
+    user: furge

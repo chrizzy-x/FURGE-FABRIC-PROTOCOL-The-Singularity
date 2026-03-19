@@ -2,6 +2,14 @@ import { createProtocolRuntimeStoreFromEnv, createReferenceLocalNetwork } from "
 
 const persistence = createProtocolRuntimeStoreFromEnv();
 const network = await createReferenceLocalNetwork({ persistence });
+const seededAccounts = network.listTokenAccounts();
+const transfer = await network.transferTokens({
+  fromAgentId: seededAccounts[1]!.ownerId,
+  toAgentId: seededAccounts[2]!.ownerId,
+  amount: 25,
+  nonce: seededAccounts[1]!.nonce,
+  memo: "Protocol smoke transfer"
+});
 const proposal = await network.submitProposal({
   subject: "Reference network health check",
   summary: "Verify the five-node Layer 0 network can finalize a signed coordination proposal.",
@@ -17,11 +25,19 @@ const bridge = await network.executeBridge({
     subject: "Protocol smoke",
     body: "Bridge execution proved the Layer 0 bridge path."
   },
-  requestedBy: network.getSnapshot().agents[0].agentId
+  requestedBy: network.getSnapshot().agents[1]!.agentId
 });
 const snapshot = network.getSnapshot();
 
-let restored: { blockCount: number; bridgeRunCount: number; feeCount: number; restoredProposalIds: string[] } | undefined;
+let restored:
+  | {
+      blockCount: number;
+      bridgeRunCount: number;
+      feeCount: number;
+      tokenEventCount: number;
+      restoredProposalIds: string[];
+    }
+  | undefined;
 if (network.isPersistenceEnabled()) {
   await network.stop();
   const restarted = await createReferenceLocalNetwork({ persistence: createProtocolRuntimeStoreFromEnv() });
@@ -30,11 +46,12 @@ if (network.isPersistenceEnabled()) {
     blockCount: restoredSnapshot.blocks.length,
     bridgeRunCount: restoredSnapshot.bridgeReports.length,
     feeCount: restoredSnapshot.feeEvents.length,
+    tokenEventCount: restoredSnapshot.tokenEvents.length,
     restoredProposalIds: restoredSnapshot.proposals.map((entry) => entry.proposalId)
   };
-  console.log(JSON.stringify({ proposal, bridge, snapshot, restored }, null, 2));
+  console.log(JSON.stringify({ transfer, proposal, bridge, snapshot, restored }, null, 2));
   await restarted.stop();
 } else {
-  console.log(JSON.stringify({ proposal, bridge, snapshot }, null, 2));
+  console.log(JSON.stringify({ transfer, proposal, bridge, snapshot }, null, 2));
   await network.stop();
 }

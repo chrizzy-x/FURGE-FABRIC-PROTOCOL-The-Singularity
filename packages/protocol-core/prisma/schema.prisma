@@ -123,3 +123,47 @@ model ProtocolFeeEvent {
   payer       AgentRecord @relation("fee_payer", fields: [payerId], references: [id])
   payee       AgentRecord? @relation("fee_payee", fields: [payeeId], references: [id])
 }
+
+model ProtocolTokenState {
+  id                 String   @id
+  tokenSymbol        String
+  maxSupply          Float
+  mintedSupply       Float
+  circulatingSupply  Float
+  currentReward      Float
+  halvingInterval    Int
+  nextHalvingAtBlock Int
+  updatedAt          DateTime @updatedAt
+}
+
+model ProtocolTokenAccount {
+  id        String   @id
+  ownerId   String
+  ownerType String
+  balance   Float
+  nonce     Int
+  createdAt DateTime
+  updatedAt DateTime
+
+  @@index([ownerId])
+}
+
+model ProtocolTokenEvent {
+  id            String   @id
+  kind          String
+  tokenSymbol   String
+  referenceId   String
+  blockHeight   Int?
+  fromAccountId String?
+  toAccountId   String?
+  initiatorId   String
+  amount        Float
+  feeAmount     Float
+  nonce         Int?
+  supplyAfter   Float
+  createdAt     DateTime
+  metadata      Json
+
+  @@index([referenceId])
+  @@index([createdAt, id])
+}

@@ -9,6 +9,7 @@
     { "path": "packages/agent-node" },
     { "path": "packages/sdk" },
     { "path": "packages/dev-tools" },
-    { "path": "apps/api" }
+    { "path": "apps/api" },
+    { "path": "apps/web" }
   ]
 }
