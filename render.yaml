@@ -10,6 +10,8 @@ services:
     healthCheckPath: /health
     autoDeployTrigger: checksPass
     envVars:
+      - key: NODE_ENV
+        value: production
       - key: NODE_VERSION
         value: 24.0.0
       - key: API_HOST
@@ -36,6 +38,8 @@ services:
       - key: OPERATOR_USERNAME
         sync: false
       - key: OPERATOR_PASSWORD_HASH
+        sync: false
+      - key: OPERATOR_PASSWORD
         sync: false
       - key: OPERATOR_JWT_SECRET
         sync: false
