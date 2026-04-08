@@ -5,9 +5,10 @@ services:
     plan: starter
     rootDir: .
     buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm db:generate && corepack pnpm build
+    preDeployCommand: corepack pnpm db:migrate
     startCommand: corepack pnpm --filter @ffp/api run start
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_VERSION
         value: 24.0.0
@@ -31,12 +32,12 @@ services:
           name: furge-fabric-protocol-redis
           property: connectionString
       - key: CORS_ALLOWED_ORIGINS
-        value: https://furge-fabric-protocol-the-singularity.pages.dev
+        sync: false
       - key: OPERATOR_USERNAME
         sync: false
       - key: OPERATOR_PASSWORD_HASH
         sync: false
-      - key: OPERATOR_TOKEN_SECRET
+      - key: OPERATOR_JWT_SECRET
         sync: false
 
   - type: redis

@@ -12,9 +12,10 @@
 
 1. Import `render.yaml` as a new blueprint in Render.
 2. Confirm the web service, PostgreSQL database, and Redis service are all project-specific.
-3. Set secrets for `OPERATOR_USERNAME`, `OPERATOR_PASSWORD_HASH`, and `OPERATOR_TOKEN_SECRET`.
-4. Confirm `CORS_ALLOWED_ORIGINS` matches the Cloudflare Pages URL.
-5. Run the deploy once and verify `/health` responds before moving to the web deployment.
+3. Confirm the API service uses the repo root, `corepack pnpm db:migrate` as the pre-deploy command, and `corepack pnpm --filter @ffp/api run start` as the start command.
+4. Set secrets for `OPERATOR_USERNAME`, `OPERATOR_PASSWORD_HASH`, and `OPERATOR_JWT_SECRET`.
+5. For a Render-only API release, leave `CORS_ALLOWED_ORIGINS` unset until a browser client exists. For a browser client, set it to the exact web origin.
+6. Run the deploy once and verify `/health`, `/snapshot`, `/token/supply`, and `/token/events` before moving to any web deployment.
 
 ## Cloudflare Pages Setup
 
